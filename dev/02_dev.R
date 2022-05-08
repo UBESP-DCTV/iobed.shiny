@@ -15,8 +15,8 @@
 
 ## Dependencies ----
 ## Add one line by package you want to add as dependency
-utils::install.packages( "thinkr" )
-usethis::use_package( "thinkr" )
+utils::install.packages( "checkmate" )
+usethis::use_package("checkmate", type = "Suggests")
 
 remotes::install_github("UBESP-DCTV/iobed.watch")
 usethis::use_dev_package("iobed.watch")

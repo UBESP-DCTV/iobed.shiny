@@ -21,6 +21,7 @@ RoxygenNote: 7.1.2
 URL: https://github.com/UBESP-DCTV/iobed.shiny
 BugReports: https://github.com/UBESP-DCTV/iobed.shiny/issues
 Suggests: 
+    checkmate,
     covr,
     spelling,
     testthat (>= 3.0.0)

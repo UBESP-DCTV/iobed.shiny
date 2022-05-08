@@ -9,6 +9,7 @@
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![Codecov test
 coverage](https://codecov.io/gh/UBESP-DCTV/iobed.shiny/branch/main/graph/badge.svg)](https://app.codecov.io/gh/UBESP-DCTV/iobed.shiny?branch=main)
+[![R-CMD-check](https://github.com/UBESP-DCTV/iobed.shiny/workflows/R-CMD-check/badge.svg)](https://github.com/UBESP-DCTV/iobed.shiny/actions)
 <!-- badges: end -->
 
 `iobed.shiny` is the data collection interface for devices used by UBEP

@@ -22,6 +22,8 @@ remotes::install_github("UBESP-DCTV/iobed.watch")
 usethis::use_dev_package("iobed.watch")
 remotes::install_github("UBESP-DCTV/iobed.bed")
 usethis::use_dev_package("iobed.bed")
+remotes::install_github("UBESP-DCTV/iobed.video")
+usethis::use_dev_package("iobed.video")
 
 ## Add modules ----
 ## Create a module infrastructure in R/

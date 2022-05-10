@@ -6,6 +6,7 @@
 #'
 #' @noRd
 #'
+#' @import iobed.bed
 #' @importFrom shiny NS tagList
 mod_bed_ui <- function(id){
   ns <- NS(id)

@@ -6,6 +6,7 @@
 #'
 #' @noRd
 #'
+#' @import iobed.watch
 #' @importFrom shiny NS tagList
 mod_watch_ui <- function(id){
   ns <- NS(id)

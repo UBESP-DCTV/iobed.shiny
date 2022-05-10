@@ -6,6 +6,7 @@
 #'
 #' @noRd
 #'
+#' @import iobed.video
 #' @importFrom shiny NS tagList
 mod_video_ui <- function(id){
   ns <- NS(id)

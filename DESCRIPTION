@@ -1,9 +1,13 @@
 Package: iobed.shiny
 Title: I.O.BED UBEP data collection
 Version: 0.0.0.9000
-Authors@R: person('Corrado', 'Lanera', email = 'corrado.lanera@ubep.unipd.it', role = c('cre', 'aut'))
-Description: Data collection interface for devices used by UBEP for the I.O.BED project.
+Authors@R: 
+    person("Corrado", "Lanera", , "corrado.lanera@ubep.unipd.it", role = c("cre", "aut"))
+Description: Data collection interface for devices used by UBEP for the
+    I.O.BED project.
 License: MIT + file LICENSE
+URL: https://github.com/UBESP-DCTV/iobed.shiny
+BugReports: https://github.com/UBESP-DCTV/iobed.shiny/issues
 Imports: 
     attempt,
     config (>= 0.3.1),
@@ -11,23 +15,23 @@ Imports:
     golem (>= 0.3.1),
     htmltools,
     iobed.bed (>= 0.1.1.9000),
+    iobed.video (>= 0.0.0.9000),
     iobed.watch (>= 0.0.0.9001),
     processx,
     shiny (>= 1.7.1),
     shinydashboard,
     thinkr
-Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.1.2
-URL: https://github.com/UBESP-DCTV/iobed.shiny
-BugReports: https://github.com/UBESP-DCTV/iobed.shiny/issues
 Suggests: 
     checkmate,
     covr,
     spelling,
     testthat (>= 3.0.0)
-Config/testthat/edition: 3
-Language: en-US
 Remotes: 
-    UBESP-DCTV/iobed.watch,
-    UBESP-DCTV/iobed.bed
+    UBESP-DCTV/iobed.bed,
+    UBESP-DCTV/iobed.video,
+    UBESP-DCTV/iobed.watch
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-US
+LazyData: true
+RoxygenNote: 7.1.2

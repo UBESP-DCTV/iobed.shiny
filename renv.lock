@@ -659,14 +659,14 @@
       "Package": "iobed.bed",
       "Version": "0.1.1.9000",
       "Source": "GitHub",
-      "Remotes": "CorradoLanera/autotestthat",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "iobed.bed",
       "RemoteUsername": "UBESP-DCTV",
-      "RemoteRef": "HEAD",
+      "RemoteRepo": "iobed.bed",
+      "RemoteRef": "master",
       "RemoteSha": "43f7c5e3ee0ab9f6beaa8e737d93e636b2aab343",
-      "Hash": "dc63e24d14d7aa0b546f2047dda08710",
+      "Remotes": "CorradoLanera/autotestthat",
+      "Hash": "5cb11c18b1dfec08a1d891db6f075b20",
       "Requirements": [
         "dplyr",
         "lubridate",
@@ -678,18 +678,34 @@
         "usethis"
       ]
     },
+    "iobed.video": {
+      "Package": "iobed.video",
+      "Version": "0.0.0.9000",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "UBESP-DCTV",
+      "RemoteRepo": "iobed.video",
+      "RemoteRef": "master",
+      "RemoteSha": "692a3c51e160786a866e5af930b4d5d7e91569a6",
+      "Remotes": "CorradoLanera/autotestthat",
+      "Hash": "ed3273a18ff4771b0b4b0ac8dbc32dd5",
+      "Requirements": [
+        "tibble"
+      ]
+    },
     "iobed.watch": {
       "Package": "iobed.watch",
       "Version": "0.0.0.9001",
       "Source": "GitHub",
-      "Remotes": "CorradoLanera/autotestthat",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "iobed.watch",
       "RemoteUsername": "UBESP-DCTV",
-      "RemoteRef": "HEAD",
+      "RemoteRepo": "iobed.watch",
+      "RemoteRef": "master",
       "RemoteSha": "a85c637a9e04fc794d56f997b14ef7b416cf3b24",
-      "Hash": "4a0ea0af8b727acf15baa5d45d79296c",
+      "Remotes": "CorradoLanera/autotestthat",
+      "Hash": "fb50b63394d1df35cd55c4fdfaf0f999",
       "Requirements": [
         "checkmate",
         "dplyr",
@@ -1332,6 +1348,18 @@
         "sourcetools",
         "withr",
         "xtable"
+      ]
+    },
+    "shinydashboard": {
+      "Package": "shinydashboard",
+      "Version": "0.7.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e418b532e9bb4eb22a714b9a9f1acee7",
+      "Requirements": [
+        "htmltools",
+        "promises",
+        "shiny"
       ]
     },
     "snakecase": {

@@ -28,19 +28,22 @@ app_ui <- function(request) {
         tabItems(
           tabItem(
             tabName = "bed",
-            h2("Bed tab content")
+            h2("Bed tab content"),
+            mod_bed_ui("bed_1")
           ),
 
 
           tabItem(
             tabName = "video",
-            h2("Video tab content")
+            h2("Video tab content"),
+            mod_video_ui("video_1")
           ),
 
 
           tabItem(
             tabName = "watch",
-            h2("Watch tab content")
+            h2("Watch tab content"),
+            mod_watch_ui("watch_1")
           )
         )
       ),

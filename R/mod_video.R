@@ -4,28 +4,41 @@
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
-#' @noRd 
+#' @noRd
 #'
-#' @importFrom shiny NS tagList 
+#' @importFrom shiny NS tagList
 mod_video_ui <- function(id){
   ns <- NS(id)
   tagList(
- 
+    fluidRow(
+      list_to_p(c("Foo", "Bar")),
+      box(
+        title = "Inputs", status = "warning", solidHeader = TRUE,
+        textInput(ns("foo"), "Foo: ")
+      ),
+      box(
+        title = "Output", status = "info", solidHeader = TRUE,
+        textOutput(ns("out_txt"))
+      )
+    )
   )
 }
-    
+
 #' video Server Functions
 #'
-#' @noRd 
+#' @noRd
 mod_video_server <- function(id){
-  moduleServer( id, function(input, output, session){
+  moduleServer(id, function(input, output, session) {
     ns <- session$ns
- 
+
+    output$out_txt <- renderText({
+      input[["foo"]]
+    })
   })
 }
-    
+
 ## To be copied in the UI
 # mod_video_ui("video_1")
-    
+
 ## To be copied in the server
 # mod_video_server("video_1")

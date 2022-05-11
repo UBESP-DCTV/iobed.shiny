@@ -146,7 +146,6 @@ mod_video_server <- function(id){
       req(input[["max_time"]])
       req(input[["fps"]])
       req(recording)
-      withr::defer(Rvision::release(my_queue))
 
       recording$on <- FALSE
       n_frames <- input[["max_time"]] * input[["fps"]]

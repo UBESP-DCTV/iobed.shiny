@@ -23,6 +23,7 @@ Imports:
     serial,
     shiny (>= 1.7.1),
     shinydashboard,
+    shinyFiles,
     thinkr,
     tibble,
     withr

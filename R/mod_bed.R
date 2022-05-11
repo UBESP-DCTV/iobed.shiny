@@ -47,6 +47,10 @@ mod_bed_ui <- function(id){
 
         actionButton(ns("bedStart"), "Start"),
         actionButton(ns("bedStop"), "Stop"),
+        actionButton(ns("save"), "Write results"),
+      ),
+      box(
+        title = "Selected parameters", ststus = "info"
       )
     ),
     fluidRow(
@@ -66,6 +70,7 @@ mod_bed_ui <- function(id){
 #'
 #' @noRd
 mod_bed_server <- function(id){
+  roots = c('wd' = '.', 'home' = '~')
 
   moduleServer( id, function(input, output, session){
     ns <- session$ns
@@ -101,7 +106,7 @@ mod_bed_server <- function(id){
 
       if (exists("con") && serial::isOpen(con)) close(con)
 
-      con <- tryCatch(
+      con <<- tryCatch(
         iobed.bed::bed_connection(input[["bedPort"]]),
         error = function(e) FALSE
       )
@@ -119,6 +124,21 @@ mod_bed_server <- function(id){
       result
     })
 
+    observeEvent(input[["save"]], {
+      req(res)
+      req(input[["pid"]])
+
+      today_now <- Sys.time() |>
+        stringr::str_remove_all("\\W")
+      patient_id <- input[["pid"]]
+      filepath <- normalizePath(path.expand(file.path(
+        ".", "data", paste0(today_now, "-", patient_id, "-bed.rds")
+      )), mustWork = FALSE)
+      cat(glue::glue("RDS to write on {filepath}.\n"))
+      readr::write_rds(res(), filepath)
+      cat(glue::glue("RDS written on {filepath}.\n"))
+
+    })
 
     output$out_port <- renderText(
       glue::glue("Output port selected is: {input[['bedPort']]}")

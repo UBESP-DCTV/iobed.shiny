@@ -15,24 +15,48 @@ mod_bed_ui <- function(id){
       list_to_p(c(
         "In this interface, you can start and stop record bed signals"
       )),
-
+      box(
+        title = "setup", status = "info", solidHeader = TRUE,
+        checkboxGroupInput(
+          ns("checks"),
+          "Check all the preliminar operations done",
+          c(
+            "Plug the bed" = "plugged",
+            "Switch on the bed" = "on",
+            "Switch on the balance" = "balance",
+            "Connect serial to PC" = "connected"
+          )
+        )
+      ),
       box(
         title = "Parameters", status = "warning", solidHeader = TRUE,
         textInput(ns("pid"), "Person's ID: "),
         selectInput(
           ns("bedPort"),
           label = "Bed connection port: ",
-          choices = serial::listPorts(),
-          selected = serial::listPorts()[[1L]]
+          choices =  tryCatch(
+            serial::listPorts(),
+            error = function(e) "No port available"
+          ),
+          selected = tryCatch(
+            serial::listPorts(),
+            error = function(e) "No port available"
+          )[[1L]]
         ),
         actionButton(ns("bedTestConnect"), "Test connection"),
 
         actionButton(ns("bedStart"), "Start"),
         actionButton(ns("bedStop"), "Stop"),
+      )
+    ),
+    fluidRow(
+      box(
+        title = "Test output", status = "info", solidHeader = TRUE,
+        tableOutput(ns("out_tbl"))
       ),
       box(
-        title = "Output", status = "info", solidHeader = TRUE,
-        DT::DTOutput(ns("con")),
+        title = "Final result", status = "info", solidHeader = TRUE,
+        DT::DTOutput(ns("res_tbl"))
       )
     )
   )
@@ -46,33 +70,63 @@ mod_bed_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
 
-    port <- reactive(
-      req(input[["bedPort"]])
-    )
-
     test_out <- eventReactive(input[["bedTestConnect"]], {
 
-      con <- reactive(
-        iobed.bed::bed_connection(port())
+      if (exists("con") && serial::isOpen(con)) stop()
+
+      con <- tryCatch(
+        iobed.bed::bed_connection(input[["bedPort"]]),
+        error = function(e) FALSE
       )
 
-      Sys.sleep(1)
+      if (isFALSE(con)) {
+        tibble(error = "Connection not established!")
+      } else {
+        open(con)
+        cat(glue::glue("connection is open: {serial::isOpen(con)}.\n"))
 
-      iobed.bed::pull_bed_stream(con()) |>
+        Sys.sleep(3)
+        print(con)
+
+        iobed.bed::pull_bed_stream(con) |>
+          iobed.bed::tidy_iobed_stream()
+      }
+
+    })
+
+
+
+
+    observeEvent(input[["bedStart"]], {
+
+      if (exists("con") && serial::isOpen(con)) close(con)
+
+      con <- tryCatch(
+        iobed.bed::bed_connection(input[["bedPort"]]),
+        error = function(e) FALSE
+      )
+
+      open(con)
+      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n"))
+      print(con)
+
+    })
+
+    res <- eventReactive(input[["bedStop"]], {
+      result <- iobed.bed::pull_bed_stream(con) |>
         iobed.bed::tidy_iobed_stream()
-
+      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n"))
+      result
     })
 
-    output$con <- renderDataTable(tibble::as_tibble(test_out()))
-    # output$output <- renderDataTable({test_out()})
 
-    output$is_connected <- renderText({
-      glue::glue()
-    })
+    output$out_port <- renderText(
+      glue::glue("Output port selected is: {input[['bedPort']]}")
+    )
 
-    output$out_txt <- renderText({
-      input[["foo"]]
-    })
+    output$out_tbl <- renderTable(test_out())
+    output$res_tbl <- DT::renderDT(res())
+
   })
 }
 

@@ -9,12 +9,16 @@
 #' @import iobed.video
 #' @import shinyjs
 #' @importFrom shiny NS tagList
+#' @importFrom shinyFiles shinyDirChoose shinyDirButton getVolumes
 mod_video_ui <- function(id){
   useShinyjs()
   ns <- NS(id)
   tagList(
     fluidRow(
-      list_to_p(c("In this interface, you can start/stop video recording")),
+      list_to_p(
+        "In this interface, you can start/stop video recording"
+      ),
+
       box(
         title = "setup", status = "info", solidHeader = TRUE,
         checkboxGroupInput(
@@ -22,11 +26,12 @@ mod_video_ui <- function(id){
           "Check all the preliminar operations done",
           c(
             "Connect the webcam to an USB port" = "connection",
-            "Select the index of the camera (e.g. '0' is default camera, often external one is '1')" = "index",
+            "Select camera index (internal: 0, external: 1+)" = "index",
             "Place the camera in a stable position" = "position"
           )
         )
       ),
+
       box(
         title = "Parameters", status = "warning", solidHeader = TRUE,
         textInput(ns("pid"), "Person's ID: "),
@@ -37,37 +42,31 @@ mod_video_ui <- function(id){
           value = 0,
           step = 1
         ),
-        sliderInput(
-          ns("max_time"),
-          "Max seconds to record: ",
-          min = 60,
-          max = 3600,
-          value = 1800,
-          step = 60
-        ),
-        numericInput(
-          ns("fps"),
-          "Camera frames/second: ",
-          min = 1,
-          max = 60,
-          value = 30,
-          step = 1
-        ),
+        # shinyDirButton(
+        #   ns('dirFolder'),
+        #   'Select a folder',
+        #   'Please select a folder',
+        #   FALSE
+        # ),
         actionButton(ns("preview"), "Take snapshot"),
         actionButton(ns("clear_preview"), "Clear snapshot"),
-        actionButton(ns("start"), "Start"),
-        actionButton(ns("stop"), "Stop"),
-        checkboxInput(ns("save"), "Save PNGs")
+        actionButton(ns("start"), "Start recording"),
+        actionButton(ns("stop"), "Stop recording"),
+
+
+        actionButton(ns("pippo"), "Clicca qui")
       ),
+
       box(
         title = "Selected parameters", status = "info", width = 12,
-        textOutput(ns("out_index")),
+        textOutput(ns("camera_idx")),
         textOutput(ns("out_file")),
         textOutput(ns("out_res_str")),
         textOutput(ns("recording")),
-        textOutput(ns("recording_frame"))
       )
     ),
+
+
     fluidRow(
       box(
         title = "Camera Preview", status = "info", solidHeader = TRUE,
@@ -78,6 +77,13 @@ mod_video_ui <- function(id){
   )
 }
 
+
+
+
+
+
+
+
 #' video Server Functions
 #'
 #' @noRd
@@ -86,21 +92,64 @@ mod_video_server <- function(id){
     ns <- session$ns
 
 
+
+
+    # Camera settings -------------------------------------------------
+
+    output$camera_idx <- renderText({
+      validate(need(input[['index']], "index must be provided"))
+
+      glue::glue("Camera index is: {input[['index']]}")
+
+    })
+
+
+
+
+    # Directory selector ----------------------------------------------
+
+    # volumes <- getVolumes()
+    # observe({
+    #   shinyDirChoose(input, 'dirFolder', roots = "C:")
+    #   cat(glue::glue("Folder selected: {input[['dirFolder']]}"))
+    # })
+
+
+    output$out_file <- renderText({
+      validate(
+        # need(input[["folder"]], "folder must be provided"),
+        need(input[["pid"]], "pid must be provided"),
+      )
+
+      glue::glue(
+        # "Output video file will be in folder: {input[['folder']]}
+        "Output video file will be in folder: {here::here()}
+        Named: YYYYMMDDhhmmss-{input[['pid']]}.mp4"
+      )
+
+    })
+
+
+
+
+    # Testing snapshot ------------------------------------------------
+
+
     test_out <- eventReactive(input[["preview"]], {
-      req(input[["max_time"]])
-      req(input[["fps"]])
-      req(input[["index"]])
+
+      validate(need(input[["index"]], "index must be provided"))
 
       op <- options(digits.secs = 6)
       withr::defer(options(op))
 
-      my_stream <- Rvision::stream(index = input[["index"]])
+      my_stream <- Rvision::stream(input[["index"]])
       withr::defer(Rvision::release(my_stream))
 
       Rvision::readNext(my_stream)
     })
 
-    output$snapshot <- renderPlot(plot(test_out()))
+
+    output$snapshot <- renderPlot({ plot(test_out()) })
 
     observeEvent(
       input[["clear_preview"]],
@@ -108,132 +157,112 @@ mod_video_server <- function(id){
     )
 
 
+
+    # Recordings ------------------------------------------------------
+
+    ciao <- eventReactive(input[["pippo"]], {
+      cat("!!!!!!!!!!!!!!!!!!!!!!!\\n")
+    }, ignoreNULL = TRUE)
+
+
+
     recording <- reactiveValues(
       on = FALSE,
-      frame = 1
+      frame = 0L
     )
-    observeEvent(
-      input[["start"]], {
-      recording$on <- TRUE
-      recording$frame <- 1
-    })
-    observeEvent(input[["stop"]], {
-      recording$on <- FALSE
-    })
 
-   observeEvent(input[["start"]], {
-      req(input[["max_time"]])
-      req(input[["fps"]])
-      req(input[["index"]])
-      req(recording)
-      recording$on <- TRUE
 
-      n_frames <- input[["max_time"]] * input[["fps"]]
-
-      op <- options(digits.secs = 6)
-      withr::defer(options(op))
-
-      my_stream <- Rvision::stream(index = input[["index"]])
-      withr::defer(Rvision::release(my_stream))
-
-      my_queue <<- my_stream |>
-        Rvision::queue(size = n_frames, overflow = "replace")
+    output$recording <- renderText({
+      glue::glue("
+        Recording is: {c('OFF', 'ON')[recording$on + 1L]}
+        Recording frame: {recording$frame}
+      ")
     })
 
-   observeEvent(input[["stop"]], {
-      req(input[["pid"]])
-      req(filepath)
-      req(input[["max_time"]])
-      req(input[["fps"]])
-      req(recording)
 
-      recording$on <- FALSE
-      n_frames <- input[["max_time"]] * input[["fps"]]
+    video_objs <- eventReactive(input[["start"]], {
+      # validate(
+      #   need(input[["index"]], "index must be provided"),
+      #   # need({ folder <- input[["folder"]] }, "folder must be provided"),
+      #   need(input[["pid"]], "pid must be provided"),
+      #   # need(recording, "recording not in progress")
+      # )
+      # index <- input[["index"]]
+      # pid <- input[["pid"]]
+      #
+      # op <- options(digits.secs = 6)
+      # withr::defer(options(op))
 
-      frames <- vector("list", n_frames)
-      names <- vector("character", n_frames)
+      cat("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-      for (frame in seq_len(length(my_queue))) {
-        frames[[frame]] <- Rvision::readNext(my_queue)
+      # my_stream <- Rvision::stream(input)
+      # my_buffer <- Rvision::queue(
+      #   x = my_stream, size = 30 * 60, overflow = "grow"
+      # )
+      # frame <- Rvision::readNext(my_buffer)
+      # my_writer <- Rvision::videoWriter(
+      #   # outputFile = get_video_path(folder, pid),
+      #   outputFile = get_video_path(here::here(), pid),
+      #   fourcc = "mpeg",
+      #   fps = 30, height = nrow(frame), width = ncol(frame)
+      # )
+      #
+      # list(
+      #   stream = my_stream,
+      #   buffer = my_buffer,
+      #   writer = my_writer
+      # )
+    })
 
-        names[[frame]] <- Sys.time() |>
-          stringr::str_replace_all(c(
-            `-|:` = "",
-            ` `="t",
-            `\\.`="m"
-          ))
 
-        if (input[["save"]]) {
-          dir_name <- dirname(filepath())
-          base_name <- basename(filepath()) |>
-            stringr::str_replace_all("\\.rds", paste0("_", frame, ".png"))
-          dir_path <- file.path(dir_name, input[["pid"]])
-          dir.create(dir_path, showWarnings = FALSE)
-          framepath <- file.path(dir_path, base_name) |>
-            fs::path_expand()
-          suppressMessages(
-            Rvision::write.Image(frames[[frame]], framepath)
+    observeEvent(recording$on, {
+      validate(
+        # need({ folder <- input[["folder"]] }, "folder must be provided"),
+        need(input[["pid"]], "pid must be provided"),
+        # need(video_objs, "recording non started yet")
+      )
+      pid <- input[["pid"]]
+
+      frame <- Rvision::readNext(video_objs()[["buffer"]])
+
+      while (recording$on) {
+
+        if (Rvision::empty(video_objs()[["buffer"]])) {
+          usethis::ui_warn(
+            "Empty buffer, cycle skipped waiting 1 s."
           )
+          Sys.sleep(1)
+          next
         }
 
-        recording$frame <- frame
+        Rvision::readNext(video_objs()[["buffer"]], target = frame)
+        # frame_path <- get_frame_path(folder, recording$frame, pid)
+        frame_path <- get_frame_path(folder, recording$frame, pid)
+        if (!Rvision::isImage(frame)) {
+          usethis::ui_warn("frame is not an image, cycle skipped")
+          next
+        }
+        recording$frame <- recording$frame + 1L
+
+        Rvision::writeFrame(video_objs()[["writer"]], frame)
+        Rvision::write.Image(frame, frame_path)
       }
-
-      output$snapshot <- renderPlot(plot(frames[[1]]))
-      res <- purrr::set_names(frames, names)
-
-      readr::write_rds(res, filepath())
-      cat(glue::glue("RDS written on {filepath()}.\n"))
-
-      output$out_res_str <- renderText(
-        glue::glue("recorded {frame} frames on disk")
-      )
-
     })
 
 
+    observeEvent(input[["stop"]], {
+      # validate(need(video_objs, "recording not started yet"))
 
-    output$recording <- renderText(
-      glue::glue("Recording is ON: {recording$on}")
-    )
-    output$recording_frame <- renderText(
-      glue::glue("Recording frame number: {recording$frame}")
-    )
+      if (recording$on) {
+        recording$on <- FALSE
+        Rvision::release(video_objs()[["writer"]])
+        Rvision::release(video_objs()[["buffer"]])
+        Rvision::release(video_objs()[["stream"]])
 
-
-
-
-    filepath <- reactive({
-      req(input[["pid"]])
-
-      today_now <- Sys.time() |>
-        stringr::str_remove_all("\\W")
-
-      patient_id <- input[["pid"]]
-
-      normalizePath(path.expand(file.path(
-        ".", "data", paste0(
-          today_now, "-", patient_id, "-video.rds"
-        )
-      )), mustWork = FALSE)
+        output$snapshot <- renderPlot(plot(video_objs[["frame"]]))
+      }
     })
 
-    # observeEvent(input[["save"]], {
-    #   req(res)
-    #   req(filepath)
-    #
-    #   readr::write_rds(res(), filepath())
-    #   cat(glue::glue("RDS written on {filepath()}.\n"))
-    #
-    # })
-
-    output$out_file <- renderText(
-      glue::glue("Output file is: {filepath()}")
-    )
-
-    output$out_index <- renderText(
-      glue::glue("Camera index is: {input[['index']]}")
-    )
 
   })
 }

@@ -1,3 +1,6 @@
+future::plan(future::multisession, workers = 2)
+
+
 #' video UI Function
 #'
 #' @description A shiny Module.
@@ -42,19 +45,10 @@ mod_video_ui <- function(id){
           value = 0,
           step = 1
         ),
-        # shinyDirButton(
-        #   ns('dirFolder'),
-        #   'Select a folder',
-        #   'Please select a folder',
-        #   FALSE
-        # ),
         actionButton(ns("preview"), "Take snapshot"),
         actionButton(ns("clear_preview"), "Clear snapshot"),
         actionButton(ns("start"), "Start recording"),
-        actionButton(ns("stop"), "Stop recording"),
-
-
-        actionButton(ns("pippo"), "Clicca qui")
+        actionButton(ns("stop"), "Stop recording")
       ),
 
       box(
@@ -68,6 +62,11 @@ mod_video_ui <- function(id){
 
 
     fluidRow(
+      box(
+        title = "Status", status = "info", solidHeader = TRUE,
+        width = 12,
+        textOutput(ns("status"))
+      ),
       box(
         title = "Camera Preview", status = "info", solidHeader = TRUE,
         width = 12,
@@ -93,8 +92,246 @@ mod_video_server <- function(id){
 
 
 
+# Setup -----------------------------------------------------------
 
-    # Camera settings -------------------------------------------------
+    status_file <- fs::file_temp()
+    # my_stream <- NULL
+    # my_buffer <- NULL
+    # my_writer <- NULL
+    # frame <- NULL
+
+    onStop({
+      function() {
+        message("Final status: ", get_status(status_file))
+        if (fs::file_exists(status_file)) unlink(status_file)
+        future::plan(future::sequential)
+      }
+    })
+
+    fire_ready(status_file)
+
+
+
+
+# Reactives -------------------------------------------------------
+
+    current_status <- reactive({
+      invalidateLater(1e3)
+      get_status(status_file)
+    })
+
+
+    out_folder <- reactive({
+      validate(need(input[["pid"]], "pid must be provided"))
+      here::here("data", input[['pid']]) |>
+        normalizePath(mustWork = FALSE)
+    })
+
+
+
+
+
+
+# Preview ---------------------------------------------------------
+
+    test_out <- reactive({
+      validate(need(input[["index"]], "index must be provided"))
+      my_stream <- Rvision::stream(input[["index"]])
+      withr::defer(Rvision::release(my_stream))
+      Rvision::readNext(my_stream)
+
+    }) |>
+      bindEvent(input[["preview"]])
+
+
+    observe({
+      usethis::ui_warn("!!!  THIS DOESN'T WORK; DON'T KNOW WHY !!!")
+      shinyjs::hide("snapshot")
+    }) |>
+      bindEvent(input[["clear_preview"]])
+
+
+
+# Recordings ------------------------------------------------------
+
+    observe({
+      message("Button start clicked")
+      req(input[['index']])
+
+      message("Setting digits.secs option")
+      op <- options(digits.secs = 6)
+      withr::defer(options(op))
+
+      if (is_status(status_file, "running")) {
+        showNotification(
+          "Already recording.
+         You cannot start new recordings if one is ongoing.
+         Please, interrupt the current run (stop button) if you need a new recording.
+        ",
+        type = "warning",
+        duration = 10
+        )
+        message("Recording doesn't started (again)")
+        return(NULL)
+      }
+
+      if (!is_status(status_file, "ready")) {
+        showNotification(
+          "Not ready.
+         Have you done all settings?
+         You need to set both the PID, and camera index to start recording.
+        ",
+        type = "warning",
+        duration = 10
+        )
+        message("Cycle doesn't started (not ready)")
+        return(NULL)
+      }
+
+      fs::dir_create(out_folder())
+      message("Output directory created/checked.")
+
+      showNotification(
+        "Recording started!",
+        type = "message",
+        duration = 10
+      )
+      message("Recording started.")
+
+      pid <- input[["pid"]]
+      index <- input[["index"]]
+      out_dir <- out_folder()
+
+      res <- future::future({
+        my_stream <- Rvision::stream(index)
+        message("Streaming is ON")
+
+
+        my_buffer <- Rvision::queue(
+          x = my_stream, size = 30 * 60, overflow = "grow"
+        )
+        message("Buffer is active")
+
+
+        frame <- Rvision::readNext(my_buffer)
+        my_writer <- Rvision::videoWriter(
+          outputFile = get_video_path(out_dir, pid),
+          fourcc = "mpeg",
+          fps = 30, height = nrow(frame), width = ncol(frame)
+        )
+        message("Writer is ready")
+
+
+        fire_running(status_file)
+
+        i <- 1
+
+        while (TRUE) {
+          print_progress(i)
+          if (Rvision::empty(my_buffer)) {
+            usethis::ui_warn(
+              "Empty buffer, cycle skipped waiting 1 s."
+            )
+            Sys.sleep(1)
+            next
+          }
+
+          Rvision::readNext(my_buffer, target = frame)
+          if (!Rvision::isImage(frame)) {
+            usethis::ui_warn("frame is not an image, cycle skipped")
+            next
+          }
+
+          frame_path <- get_frame_path(out_dir, i, pid)
+          Rvision::write.Image(frame, frame_path)
+          Rvision::writeFrame(my_writer, frame)
+
+          if (is_status(status_file, "interrupt")) break
+
+          fire_running(
+            status_file,
+            round(1 - 1/sqrt(i/10), 2 + log10(i)) * 100
+          )
+          i <- i + 1
+        }
+        release_rvision()
+        message("Recording interrupted!")
+        test_out <- frame
+      })
+
+      res <- promises::catch(
+        res,
+        function(e) {
+          message(e$message)
+          fire_strange(status_file)
+          message("Releasing writer/buffer/stream")
+          release_rvision()
+          showNotification(e$message, type = "warning")
+        }
+      )
+
+      res <- promises::finally(
+        res,
+        function() {
+          if (!is_status(status_file, "strange")) {
+            fire_ready(status_file)
+          }
+        }
+      )
+
+      # Return something other than the promise so shiny remains
+      # responsive
+      NULL
+    }) |>
+      bindEvent(input$start)
+
+
+
+
+    observe({
+      message("Button stop clicked")
+
+      if (is_status(status_file, "ready")) {
+        showNotification(
+          "Recording is not running.
+         You cannot interrupt a not running recording...
+         If you like, you can start a recording to interrupt ;-)
+         (start button).
+        ",
+        type = "warning",
+        duration = 10
+        )
+        message("Recording ready to start, it doesn't interrupted")
+        return(NULL)
+      }
+
+      if (is_status(status_file, "interrupt")) {
+        showNotification(
+          "Recording already interrupted.
+         You cannot interrupt a not running recording...
+         If ready, you can start a recording to interrupt ;-)
+         (start button).
+        ",
+        type = "warning",
+        duration = 10
+        )
+        message("Recording doesn't interrupted (again)")
+        return(NULL)
+      }
+
+      fire_interrupt(status_file)
+      showNotification("Cycle stopped")
+      message("Streaming is OFF")
+      message(
+        "objects in globalenv (OK if empty!): ", ls(envir = .GlobalEnv)
+      )
+    }) |>
+      bindEvent(input$stop)
+
+
+
+
+# Outputs ---------------------------------------------------------
 
     output$camera_idx <- renderText({
       validate(need(input[['index']], "index must be provided"))
@@ -103,166 +340,36 @@ mod_video_server <- function(id){
 
     })
 
-
-
-
-    # Directory selector ----------------------------------------------
-
-    # volumes <- getVolumes()
-    # observe({
-    #   shinyDirChoose(input, 'dirFolder', roots = "C:")
-    #   cat(glue::glue("Folder selected: {input[['dirFolder']]}"))
-    # })
-
-
-    output$out_file <- renderText({
-      validate(
-        # need(input[["folder"]], "folder must be provided"),
-        need(input[["pid"]], "pid must be provided"),
-      )
-
-      glue::glue(
-        # "Output video file will be in folder: {input[['folder']]}
-        "Output video file will be in folder: {here::here()}
-        Named: YYYYMMDDhhmmss-{input[['pid']]}.mp4"
-      )
-
-    })
-
-
-
-
-    # Testing snapshot ------------------------------------------------
-
-
-    test_out <- eventReactive(input[["preview"]], {
-
-      validate(need(input[["index"]], "index must be provided"))
-
-      op <- options(digits.secs = 6)
-      withr::defer(options(op))
-
-      my_stream <- Rvision::stream(input[["index"]])
-      withr::defer(Rvision::release(my_stream))
-
-      Rvision::readNext(my_stream)
-    })
-
-
     output$snapshot <- renderPlot({ plot(test_out()) })
 
-    observeEvent(
-      input[["clear_preview"]],
-      shinyjs::hide(ns("snapshot"))
-    )
-
-
-
-    # Recordings ------------------------------------------------------
-
-    ciao <- eventReactive(input[["pippo"]], {
-      cat("!!!!!!!!!!!!!!!!!!!!!!!\\n")
-    }, ignoreNULL = TRUE)
-
-
-
-    recording <- reactiveValues(
-      on = FALSE,
-      frame = 0L
-    )
-
-
-    output$recording <- renderText({
-      glue::glue("
-        Recording is: {c('OFF', 'ON')[recording$on + 1L]}
-        Recording frame: {recording$frame}
-      ")
-    })
-
-
-    video_objs <- eventReactive(input[["start"]], {
-      # validate(
-      #   need(input[["index"]], "index must be provided"),
-      #   # need({ folder <- input[["folder"]] }, "folder must be provided"),
-      #   need(input[["pid"]], "pid must be provided"),
-      #   # need(recording, "recording not in progress")
-      # )
-      # index <- input[["index"]]
-      # pid <- input[["pid"]]
-      #
-      # op <- options(digits.secs = 6)
-      # withr::defer(options(op))
-
-      cat("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-      # my_stream <- Rvision::stream(input)
-      # my_buffer <- Rvision::queue(
-      #   x = my_stream, size = 30 * 60, overflow = "grow"
-      # )
-      # frame <- Rvision::readNext(my_buffer)
-      # my_writer <- Rvision::videoWriter(
-      #   # outputFile = get_video_path(folder, pid),
-      #   outputFile = get_video_path(here::here(), pid),
-      #   fourcc = "mpeg",
-      #   fps = 30, height = nrow(frame), width = ncol(frame)
-      # )
-      #
-      # list(
-      #   stream = my_stream,
-      #   buffer = my_buffer,
-      #   writer = my_writer
-      # )
-    })
-
-
-    observeEvent(recording$on, {
-      validate(
-        # need({ folder <- input[["folder"]] }, "folder must be provided"),
-        need(input[["pid"]], "pid must be provided"),
-        # need(video_objs, "recording non started yet")
+    output$out_file <- renderText({
+      glue::glue(
+        "Output video will be in: {out_folder()}
+        Named: YYYYMMDDhhmmss-{input[['pid']]}.mp4"
       )
-      pid <- input[["pid"]]
+    })
 
-      frame <- Rvision::readNext(video_objs()[["buffer"]])
-
-      while (recording$on) {
-
-        if (Rvision::empty(video_objs()[["buffer"]])) {
-          usethis::ui_warn(
-            "Empty buffer, cycle skipped waiting 1 s."
-          )
-          Sys.sleep(1)
-          next
-        }
-
-        Rvision::readNext(video_objs()[["buffer"]], target = frame)
-        # frame_path <- get_frame_path(folder, recording$frame, pid)
-        frame_path <- get_frame_path(folder, recording$frame, pid)
-        if (!Rvision::isImage(frame)) {
-          usethis::ui_warn("frame is not an image, cycle skipped")
-          next
-        }
-        recording$frame <- recording$frame + 1L
-
-        Rvision::writeFrame(video_objs()[["writer"]], frame)
-        Rvision::write.Image(frame, frame_path)
-      }
+    output$status <- renderText({
+      paste0("Current status: ", current_status())
     })
 
 
-    observeEvent(input[["stop"]], {
-      # validate(need(video_objs, "recording not started yet"))
 
-      if (recording$on) {
-        recording$on <- FALSE
-        Rvision::release(video_objs()[["writer"]])
-        Rvision::release(video_objs()[["buffer"]])
-        Rvision::release(video_objs()[["stream"]])
-
-        output$snapshot <- renderPlot(plot(video_objs[["frame"]]))
-      }
-    })
-
+#
+#
+#     observeEvent(input[["stop"]], {
+#       # validate(need(video_objs, "recording not started yet"))
+#
+#       if (recording$on) {
+#         recording$on <- FALSE
+#         Rvision::release(video_objs()[["writer"]])
+#         Rvision::release(video_objs()[["buffer"]])
+#         Rvision::release(video_objs()[["stream"]])
+#
+#         output$snapshot <- renderPlot(plot(video_objs[["frame"]]))
+#       }
+#     })
+#
 
   })
 }

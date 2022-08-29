@@ -81,7 +81,7 @@ mod_watch_server <- function(id){
       cat(glue::glue(
         "Is FIT: {stringr::str_detect(fit[['datapath']], '[Ff][Ii][Tt]$')}\n\n"
       ))
-  str(fit[['datapath']], 1)
+      utils::str(fit[['datapath']], 1)
 
       first <- fit[["datapath"]][[1L]] |>
         iobed.watch::load_fit(dirname(filepath()), overwrite = TRUE)
@@ -94,7 +94,7 @@ mod_watch_server <- function(id){
       cat(glue::glue("second is : {second}\n\n"))
 
       third <- iobed.watch::parse_fit_data(second)
-      cat(glue::glue("third is : {str(third, 1)}\n\n"))
+      cat(glue::glue("third is : {utils::str(third, 1)}\n\n"))
 
       third
     })

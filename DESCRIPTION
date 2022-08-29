@@ -9,31 +9,41 @@ License: MIT + file LICENSE
 URL: https://github.com/UBESP-DCTV/iobed.shiny
 BugReports: https://github.com/UBESP-DCTV/iobed.shiny/issues
 Imports: 
-    attempt,
     config (>= 0.3.1),
     DT,
+    fs,
+    future,
     glue,
     golem (>= 0.3.1),
-    htmltools,
+    here,
     iobed.bed (>= 0.1.1.9000),
     iobed.video (>= 0.0.0.9000),
     iobed.watch (>= 0.0.0.9001),
-    processx,
+    promises,
+    readr,
     rlang (>= 0.4.11),
+    Rvision (>= 0.6.2),
     serial,
     shiny (>= 1.7.1),
     shinydashboard,
     shinyFiles,
-    thinkr,
+    shinyjs,
+    stringr,
     tibble,
+    usethis,
     withr
 Suggests: 
+    attempt,
     checkmate,
     covr,
+    htmltools,
+    processx,
     roxygen2,
     spelling,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    thinkr
 Remotes: 
+    swarm-lab/Rvision,
     UBESP-DCTV/iobed.bed,
     UBESP-DCTV/iobed.video,
     UBESP-DCTV/iobed.watch

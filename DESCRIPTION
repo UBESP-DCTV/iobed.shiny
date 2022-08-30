@@ -16,9 +16,9 @@ Imports:
     glue,
     golem (>= 0.3.1),
     here,
-    iobed.bed (>= 0.1.1.9000),
-    iobed.video (>= 0.0.0.9000),
-    iobed.watch (>= 0.0.0.9001),
+    iobed.bed (>= 0.2.0),
+    iobed.video (>= 0.1.0),
+    iobed.watch (>= 0.2.0),
     promises,
     readr,
     rlang (>= 0.4.11),
@@ -46,7 +46,8 @@ Remotes:
     swarm-lab/Rvision,
     UBESP-DCTV/iobed.bed,
     UBESP-DCTV/iobed.video,
-    UBESP-DCTV/iobed.watch
+    UBESP-DCTV/iobed.watch,
+    UBESP-DCTV/iobed.shiny
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US

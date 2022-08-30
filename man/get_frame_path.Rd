@@ -6,6 +6,13 @@
 \usage{
 get_frame_path(folder, frame_id, pid)
 }
+\arguments{
+\item{folder}{(chr) folder}
+
+\item{frame_id}{(chr) camera frame (0, 1, ...)}
+
+\item{pid}{(chr) Personal ID}
+}
 \value{
 Value
 }

@@ -10,6 +10,9 @@ now <- function() {
 
 #' Title
 #'
+#' @param folder (chr) folder
+#' @param pid (chr) Personal ID
+#'
 #' @return Value
 #' @export
 get_video_path <- function(folder, pid) {
@@ -18,6 +21,10 @@ get_video_path <- function(folder, pid) {
 }
 
 #' Title
+#'
+#' @param frame_id (chr) camera frame (0, 1, ...)
+#' @param folder (chr) folder
+#' @param pid (chr) Personal ID
 #'
 #' @return Value
 #' @export
@@ -28,6 +35,8 @@ get_frame_path <- function(folder, frame_id, pid) {
 
 #' Title
 #'
+#' @param status_file (chr) status file
+#'
 #' @return Value
 #' @export
 get_status <- function(status_file) {
@@ -36,6 +45,9 @@ get_status <- function(status_file) {
 
 #' Title
 #'
+#' @param status_file (chr) status file
+#' @param msg (chr) message
+#'
 #' @return Value
 #' @export
 set_status <- function(status_file, msg) {
@@ -43,6 +55,8 @@ set_status <- function(status_file, msg) {
 }
 
 #' Title
+#'
+#' @param status_file (chr) status file
 #'
 #' @return Value
 #' @export
@@ -53,6 +67,8 @@ fire_interrupt <- function(status_file) {
 
 #' Title
 #'
+#' @param status_file (chr) status file
+#'
 #' @return Value
 #' @export
 fire_ready <- function(status_file) {
@@ -60,6 +76,8 @@ fire_ready <- function(status_file) {
 }
 
 #' Title
+#'
+#' @param status_file (chr) status file
 #'
 #' @return Value
 #' @export
@@ -70,6 +88,9 @@ fire_strange <- function(status_file) {
 
 #' Title
 #'
+#' @param status_file (chr) status file
+#' @param perc (num) complate rate
+#'
 #' @return Value
 #' @export
 fire_running <- function(status_file, perc = NULL) {
@@ -78,6 +99,9 @@ fire_running <- function(status_file, perc = NULL) {
 }
 
 #' Title
+#'
+#' @param status_file (chr) status file
+#' @param status (chr) status to detect
 #'
 #' @return Value
 #' @export
@@ -89,6 +113,8 @@ is_status <- function(status_file, status) {
 }
 
 #' Title
+#'
+#' @param i (int) index
 #'
 #' @return Value
 #' @export

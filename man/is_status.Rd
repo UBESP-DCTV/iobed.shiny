@@ -6,6 +6,11 @@
 \usage{
 is_status(status_file, status)
 }
+\arguments{
+\item{status_file}{(chr) status file}
+
+\item{status}{(chr) status to detect}
+}
 \value{
 Value
 }

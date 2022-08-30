@@ -6,6 +6,9 @@
 \usage{
 get_status(status_file)
 }
+\arguments{
+\item{status_file}{(chr) status file}
+}
 \value{
 Value
 }

@@ -6,6 +6,11 @@
 \usage{
 set_status(status_file, msg)
 }
+\arguments{
+\item{status_file}{(chr) status file}
+
+\item{msg}{(chr) message}
+}
 \value{
 Value
 }

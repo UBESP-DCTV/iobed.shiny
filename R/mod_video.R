@@ -98,6 +98,9 @@ mod_video_server <- function(id) {
 # Setup -----------------------------------------------------------
 
     status_file <- fs::file_temp(ext = "txt")
+    my_writer <- NULL
+    my_stream <- NULL
+    my_buffer <- NULL
 
     onStop({
       function() {

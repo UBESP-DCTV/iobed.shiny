@@ -6,6 +6,11 @@
 \usage{
 fire_running(status_file, perc = NULL)
 }
+\arguments{
+\item{status_file}{(chr) status file}
+
+\item{perc}{(num) complate rate}
+}
 \value{
 Value
 }

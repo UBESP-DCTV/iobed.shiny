@@ -6,6 +6,9 @@
 \usage{
 fire_interrupt(status_file)
 }
+\arguments{
+\item{status_file}{(chr) status file}
+}
 \value{
 Value
 }

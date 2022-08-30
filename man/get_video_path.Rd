@@ -6,6 +6,11 @@
 \usage{
 get_video_path(folder, pid)
 }
+\arguments{
+\item{folder}{(chr) folder}
+
+\item{pid}{(chr) Personal ID}
+}
 \value{
 Value
 }

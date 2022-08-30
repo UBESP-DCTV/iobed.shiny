@@ -6,6 +6,9 @@
 \usage{
 print_progress(i)
 }
+\arguments{
+\item{i}{(int) index}
+}
 \value{
 Value
 }

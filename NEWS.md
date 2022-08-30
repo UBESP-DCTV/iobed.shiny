@@ -1,3 +1,5 @@
+# iobed.shiny 0.2.2
+
 * Removed check for _ready_ness.
 
 # iobed.shiny 0.2.1

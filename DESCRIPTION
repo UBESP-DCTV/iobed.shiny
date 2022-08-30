@@ -1,6 +1,6 @@
 Package: iobed.shiny
 Title: I.O.BED UBEP data collection
-Version: 0.1.0.9000
+Version: 0.2.0
 Authors@R: 
     person("Corrado", "Lanera", , "corrado.lanera@ubep.unipd.it", role = c("cre", "aut"))
 Description: Data collection interface for devices used by UBEP for the

@@ -130,18 +130,18 @@ mod_video_server <- function(id) {
         normalizePath(mustWork = FALSE)
     })
 
-
-    observe({
-      message("Button Set clicked")
-      validate(need(input[["pid"]], "pid must be provided"))
-      validate(need(input[["index"]], "index must be provided"))
-
-      disable(ns("pid"))
-      disable(ns("index"))
-
-      fire_ready(status_file)
-    }) |>
-      bindEvent(input[["set"]])
+    fire_ready(status_file)
+    #
+    # observe({
+    #   message("Button Set clicked")
+    #   validate(need(input[["pid"]], "pid must be provided"))
+    #   validate(need(input[["index"]], "index must be provided"))
+    #
+    #   disable(ns("pid"))
+    #   disable(ns("index"))
+    #
+    # }) |>
+    #   bindEvent(input[["set"]])
 
 
 

@@ -1,4 +1,8 @@
+* Removed check for _ready_ness.
+
 # iobed.shiny 0.2.1
+
+* activate `{renv}`
 
 # iobed.shiny 0.2.0
 

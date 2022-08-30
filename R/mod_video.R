@@ -14,7 +14,7 @@ future::plan(future::multisession, workers = 2)
 #' @importFrom shiny NS tagList
 #' @importFrom shinyFiles shinyDirChoose shinyDirButton getVolumes
 mod_video_ui <- function(id){
-  useShinyjs()
+  suppressWarnings(useShinyjs())
   ns <- NS(id)
   tagList(
     fluidRow(
@@ -45,6 +45,7 @@ mod_video_ui <- function(id){
           value = 0,
           step = 1
         ),
+        actionButton(ns("set"), "Accept settings"),
         actionButton(ns("preview"), "Take snapshot"),
         actionButton(ns("clear_preview"), "Clear snapshot"),
         actionButton(ns("start"), "Start recording"),
@@ -85,20 +86,18 @@ mod_video_ui <- function(id){
 
 #' video Server Functions
 #'
+#' @importFrom shinyjs hide disable
 #' @noRd
-mod_video_server <- function(id){
+mod_video_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
 
 
+
 # Setup -----------------------------------------------------------
 
-    status_file <- fs::file_temp()
-    # my_stream <- NULL
-    # my_buffer <- NULL
-    # my_writer <- NULL
-    # frame <- NULL
+    status_file <- fs::file_temp(ext = "txt")
 
     onStop({
       function() {
@@ -108,7 +107,8 @@ mod_video_server <- function(id){
       }
     })
 
-    fire_ready(status_file)
+    fire_interrupt(status_file)
+
 
 
 
@@ -128,7 +128,17 @@ mod_video_server <- function(id){
     })
 
 
+    observe({
+      message("Button Set clicked")
+      validate(need(input[["pid"]], "pid must be provided"))
+      validate(need(input[["index"]], "index must be provided"))
 
+      disable(ns("pid"))
+      disable(ns("index"))
+
+      fire_ready(status_file)
+    }) |>
+      bindEvent(input[["set"]])
 
 
 
@@ -139,14 +149,13 @@ mod_video_server <- function(id){
       my_stream <- Rvision::stream(input[["index"]])
       withr::defer(Rvision::release(my_stream))
       Rvision::readNext(my_stream)
-
     }) |>
       bindEvent(input[["preview"]])
 
 
     observe({
       usethis::ui_warn("!!!  THIS DOESN'T WORK; DON'T KNOW WHY !!!")
-      shinyjs::hide("snapshot")
+      hide(ns("snapshot"))
     }) |>
       bindEvent(input[["clear_preview"]])
 
@@ -178,7 +187,7 @@ mod_video_server <- function(id){
       if (!is_status(status_file, "ready")) {
         showNotification(
           "Not ready.
-         Have you done all settings?
+         Have you done all settings (and accepted them)?
          You need to set both the PID, and camera index to start recording.
         ",
         type = "warning",
@@ -227,7 +236,8 @@ mod_video_server <- function(id){
         i <- 1
 
         while (TRUE) {
-          print_progress(i)
+          # print_progress(i)
+          # Sys.sleep(0.1)
           if (Rvision::empty(my_buffer)) {
             usethis::ui_warn(
               "Empty buffer, cycle skipped waiting 1 s."
@@ -242,21 +252,25 @@ mod_video_server <- function(id){
             next
           }
 
-          frame_path <- get_frame_path(out_dir, i, pid)
-          Rvision::write.Image(frame, frame_path)
           Rvision::writeFrame(my_writer, frame)
+          suppressMessages(
+            Rvision::write.Image(frame, get_frame_path(out_dir, i, pid))
+          )
 
           if (is_status(status_file, "interrupt")) break
 
           fire_running(
             status_file,
-            round(1 - 1/sqrt(i/10), 2 + log10(i)) * 100
+            round(1 - 1/sqrt(i/50), 2 + log10(i)) * 100
           )
           i <- i + 1
         }
-        release_rvision()
+        Rvision::release(my_writer)
+        Rvision::release(my_buffer)
+        Rvision::release(my_stream)
+
         message("Recording interrupted!")
-        test_out <- frame
+        frame
       })
 
       res <- promises::catch(
@@ -265,7 +279,10 @@ mod_video_server <- function(id){
           message(e$message)
           fire_strange(status_file)
           message("Releasing writer/buffer/stream")
-          release_rvision()
+          Rvision::release(my_writer)
+          Rvision::release(my_buffer)
+          Rvision::release(my_stream)
+
           showNotification(e$message, type = "warning")
         }
       )
@@ -352,24 +369,6 @@ mod_video_server <- function(id){
     output$status <- renderText({
       paste0("Current status: ", current_status())
     })
-
-
-
-#
-#
-#     observeEvent(input[["stop"]], {
-#       # validate(need(video_objs, "recording not started yet"))
-#
-#       if (recording$on) {
-#         recording$on <- FALSE
-#         Rvision::release(video_objs()[["writer"]])
-#         Rvision::release(video_objs()[["buffer"]])
-#         Rvision::release(video_objs()[["stream"]])
-#
-#         output$snapshot <- renderPlot(plot(video_objs[["frame"]]))
-#       }
-#     })
-#
 
   })
 }

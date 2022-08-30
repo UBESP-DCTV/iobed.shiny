@@ -4,7 +4,7 @@
 \alias{release_rvision}
 \title{Title}
 \usage{
-release_rvision(envir = .GlobalEnv)
+release_rvision(envir = parent.frame(1))
 }
 \arguments{
 \item{envir}{environment}

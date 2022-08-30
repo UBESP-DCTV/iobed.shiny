@@ -107,12 +107,7 @@ print_progress <- function(i) {
 #'
 #' @return Value
 #' @export
-release_rvision <- function(envir = .GlobalEnv) {
-  if (
-    exists("my_writer", envir = envir) ||
-    exists("my_buffer", envir = envir) ||
-    exists("my_stream", envir = envir)
-  ) {
+release_rvision <- function(envir = parent.frame(1)) {
     suppressWarnings({
       Rvision::release(my_writer)
       Rvision::release(my_buffer)
@@ -122,6 +117,5 @@ release_rvision <- function(envir = .GlobalEnv) {
     ## Rvision:::release.Rcpp_Stream(); so it warns and doesn't remove
     ## my_stream, but it success in releasing it.
     rm(my_stream, my_buffer, my_writer, envir = envir)
-  }
 
 }

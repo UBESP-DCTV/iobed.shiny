@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)
 options(shiny.reactlog = TRUE)
 
 golem::detach_all_attached()

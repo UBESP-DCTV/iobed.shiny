@@ -1,3 +1,5 @@
+# iobed.shiny 0.2.1
+
 # iobed.shiny 0.2.0
 
 * Video recording save mp4 video and all the frames as png images, in the `data/<pid>/` folder, prepending the timestamp (YYYYMMDDhhmmss).

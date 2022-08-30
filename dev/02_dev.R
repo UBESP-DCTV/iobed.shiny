@@ -18,12 +18,33 @@
 utils::install.packages( "checkmate" )
 usethis::use_package("checkmate", type = "Suggests")
 
+utils::install.packages("future")
+usethis::use_package("future")
+utils::install.packages("promises")
+usethis::use_package("promises")
+utils::install.packages("withr")
+usethis::use_package("withr")
+utils::install.packages("fs")
+usethis::use_package("fs")
+utils::install.packages("shinyjs")
+usethis::use_package("shinyjs")
+utils::install.packages("readr")
+usethis::use_package("readr")
+utils::install.packages("stringr")
+usethis::use_package("stringr")
+utils::install.packages("glue")
+usethis::use_package("glue")
+
+
 remotes::install_github("UBESP-DCTV/iobed.watch")
 usethis::use_dev_package("iobed.watch")
 remotes::install_github("UBESP-DCTV/iobed.bed")
 usethis::use_dev_package("iobed.bed")
 remotes::install_github("UBESP-DCTV/iobed.video")
 usethis::use_dev_package("iobed.video")
+remotes::install_github("swarm-lab/Rvision")
+usethis::use_dev_package("Rvision")
+
 
 ## Add modules ----
 ## Create a module infrastructure in R/
@@ -33,7 +54,7 @@ golem::add_module( name = "bed" ) # Name of the module
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
-golem::add_fct( "helpers" )
+golem::add_fct( "mod_video" )
 golem::add_utils( "helpers" )
 
 ## External resources

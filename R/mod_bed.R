@@ -103,8 +103,7 @@ mod_bed_server <- function(id){
 
 
 
-    observeEvent(input[["bedStart"]], {
-
+    observe({
       if (exists("con") && serial::isOpen(con)) close(con)
 
       con <<- tryCatch(
@@ -116,7 +115,8 @@ mod_bed_server <- function(id){
       cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
       print(con)
 
-    })
+    }) |>
+      bindEvent(input[["bedStart"]])
 
     res <- eventReactive(input[["bedStop"]], {
       result <- iobed.bed::pull_bed_stream(con) |>
@@ -134,9 +134,10 @@ mod_bed_server <- function(id){
       normalizePath(path.expand(file.path(
         ".", "data", paste0(today_now, "-", patient_id, "-bed.rds")
       )), mustWork = FALSE)
-    })
+    }) |>
+      bindEvent(input[["bedStart"]])
 
-    observeEvent(input[["save"]], {
+    observe({
       req(res)
       req(filepath)
 
@@ -144,7 +145,8 @@ mod_bed_server <- function(id){
       readr::write_rds(res(), filepath())
       cat(glue::glue("RDS written on {filepath()}.\n"))
 
-    })
+    }) |>
+      bindEvent(input[["save"]])
 
     output$out_folder <- renderText(
       glue::glue("Outup folder is: {filepath()}")

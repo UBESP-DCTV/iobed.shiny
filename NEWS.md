@@ -1,3 +1,5 @@
+# iobed.shiny 0.2.3
+
 * Now the res reactive look for the connection in the .Globalenv directly, preventing a bug that caused an error in the very first access to the connection from the tcltk ("[tcl] error reading "file1fac46bee60": I/O error.") probably caused by the different environment in which it first look for it.
 
 # iobed.shiny 0.2.2

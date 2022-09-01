@@ -76,9 +76,18 @@ mod_bed_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
 
-    test_out <- eventReactive(input[["bedTestConnect"]], {
 
-      if (exists("con") && serial::isOpen(con)) stop()
+
+
+    test_out <- reactive({
+      message('re-evaluating test?out after button test pressing')
+
+      if (exists("con") && serial::isOpen(con)) {
+        usethis::ui_warn(
+          "A connection is already open, it will be closed now!"
+        )
+        close(con)
+      }
 
       con <- tryCatch(
         iobed.bed::bed_connection(input[["bedPort"]]),
@@ -98,34 +107,14 @@ mod_bed_server <- function(id){
           iobed.bed::tidy_iobed_stream()
       }
 
-    })
-
-
-
-
-    observe({
-      if (exists("con") && serial::isOpen(con)) close(con)
-
-      con <<- tryCatch(
-        iobed.bed::bed_connection(input[["bedPort"]]),
-        error = function(e) FALSE
-      )
-
-      open(con)
-      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
-      print(con)
-
     }) |>
-      bindEvent(input[["bedStart"]])
+      bindEvent(input[["bedTestConnect"]])
 
-    res <- eventReactive(input[["bedStop"]], {
-      result <- iobed.bed::pull_bed_stream(con) |>
-        iobed.bed::tidy_iobed_stream()
-      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
-      result
-    })
+
+
 
     filepath <- reactive({
+      message('re-evaluating filepath after button start pressing')
       req(input[["pid"]])
 
       today_now <- Sys.time() |>
@@ -137,7 +126,49 @@ mod_bed_server <- function(id){
     }) |>
       bindEvent(input[["bedStart"]])
 
+
+
+
     observe({
+      message('Button start pressed')
+      if (exists("con") && serial::isOpen(con))  {
+        usethis::ui_warn(
+          "A connection is already open, it will be closed now!"
+        )
+        close(con)
+      }
+
+      con <<- tryCatch(
+        iobed.bed::bed_connection(input[["bedPort"]]),
+        error = function(e) FALSE
+      )
+
+      open(con)
+      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
+      summary(con)
+
+    }) |>
+      bindEvent(input[["bedStart"]])
+
+
+
+
+    res <- reactive({
+
+      message('re-evaluating res after button stop pressing')
+
+      result <- iobed.bed::pull_bed_stream(.GlobalEnv$con) |>
+        iobed.bed::tidy_iobed_stream()
+      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
+      result
+    }) |>
+      bindEvent(input[["bedStop"]])
+
+
+
+
+    observe({
+      message('Button save pressing')
       req(res)
       req(filepath)
 
@@ -148,6 +179,9 @@ mod_bed_server <- function(id){
     }) |>
       bindEvent(input[["save"]])
 
+
+
+
     output$out_folder <- renderText(
       glue::glue("Outup folder is: {filepath()}")
     )
@@ -157,7 +191,9 @@ mod_bed_server <- function(id){
     )
 
     output$out_tbl <- renderTable(test_out())
+
     output$res_tbl <- DT::renderDT(res())
+
 
   })
 }

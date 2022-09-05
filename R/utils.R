@@ -26,7 +26,7 @@ close_if_open_connection <- function(con = "con") {
   TRUE
 }
 
-check_connection <- function(con) {
+check_connection <- function(con,  session =  getDefaultReactiveDomain()) {
   if (isFALSE(con)) {
     showNotification(
       "Connection not established.
@@ -34,7 +34,8 @@ check_connection <- function(con) {
           Thanks.
         ",
       type = "error",
-      duration = 10
+      duration = 10,
+      session = session
     )
   }
   !isFALSE(con)

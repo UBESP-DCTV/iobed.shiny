@@ -176,8 +176,9 @@ mod_bed_server <- function(id){
 
     observe({
       usethis::ui_done('Button start clicked')
-      req(input[["bedPort"]])
-      req(input[["pid"]])
+      bedPort <- req(input[["bedPort"]])
+      pid <- req(input[["pid"]])
+      .filepath <- filepath()
 
       if (is_status(status_bed, "starting")) {
         return(test_failed_or_not_run(session = session))
@@ -188,13 +189,17 @@ mod_bed_server <- function(id){
       close_if_open_connection("bed_con")
 
       usethis::ui_todo("{{future}} is running!")
-      res <- future::future({
+      res <- future::future(seed = TRUE, {
 
         bed_con <- tryCatch(
-          iobed.bed::bed_connection(input[["bedPort"]]),
+          iobed.bed::bed_connection(bedPort),
           error = function(e) FALSE
         )
-        if (isFALSE(check_connection(bed_con))) return(NULL)
+        if (isFALSE(check_connection(bed_con, session))) {
+          usethis::ui_warn("Error in checking the connection.")
+          return(NULL)
+        }
+
 
         open(bed_con)
         withr::defer(close(bed_con))
@@ -219,14 +224,20 @@ mod_bed_server <- function(id){
 
         message("Recording interrupted!")
 
-        iobed.bed::pull_bed_stream(bed_con) |>
-          iobed.bed::tidy_iobed_stream() |>
-          readr::write_rds(filepath())
+        stream <- iobed.bed::pull_bed_stream(bed_con)
+        usethis::ui_done("XXXXXXXXXXXXXXXXXXXXXXXx")
+        res_tbl <- iobed.bed::tidy_iobed_stream(stream)
+        usethis::ui_done("YYYYYYYYYYYYYYYYYYYYYYYYYY")
+        Sys.sleep(1)
+
+        usethis::ui_todo("writing rds bed data tbl")
+        fs::dir_create(dirname(.filepath), recurse = TRUE)
+        readr::write_rds(res_tbl, .filepath)
 
         usethis::ui_done("Elaborating bed table")
-        usethis::ui_done("Writing bed data on {filepath()}.")
+        usethis::ui_done("Writing bed data on {.filepath}.")
 
-        filepath()
+        .filepath
 
       })
 

@@ -48,6 +48,7 @@ mod_bed_ui <- function(id){
           )[[1L]]
         ),
 
+        # actionButton(ns("set"), "Accept settings"),
         actionButton(ns("bedTestConnect"), "Test connection"),
 
         actionButton(ns("bedStart"), "Start"),
@@ -100,6 +101,13 @@ mod_bed_server <- function(id){
 
 # Reactives -------------------------------------------------------
 
+    current_status <- reactive({
+      invalidateLater(1e3)
+      get_status(status_bed)
+    })
+
+
+
     filepath <- reactive({
       validate(need(input[["pid"]], "PID must be provided."))
       message('re-evaluating filepath after button start pressing')
@@ -111,7 +119,7 @@ mod_bed_server <- function(id){
 
     })
 
-    fire_ready(status_bed)
+    fire_starting(status_bed)
 
 
 
@@ -121,15 +129,17 @@ mod_bed_server <- function(id){
     test_out <- reactive({
       validate(need(input[["bedPort"]], "Bed port must be provided."))
 
+      if (would_start_when_running(status_bed)) return(NULL)
+
+      usethis::ui_done(
+        "(re-)evaluating test_out after button test pressing"
+      )
       showNotification(
         "Test for bed connection is running.
         Resulting table should be appear in a while.
         ",
         type = "message",
         duration = 10
-      )
-      usethis::ui_done(
-        "(re-)evaluating test_out after button test pressing"
       )
 
       close_if_open_connection("bed_con")
@@ -142,14 +152,21 @@ mod_bed_server <- function(id){
 
       open(bed_con)
       withr::defer(close(bed_con))
-
+      usethis::ui_done("Opening bed connection.")
       usethis::ui_info("Connection is open: {serial::isOpen(bed_con)}.")
 
       Sys.sleep(3)
       summary(bed_con)
 
-      iobed.bed::pull_bed_stream(bed_con) |>
-        iobed.bed::tidy_iobed_stream()
+      tryCatch({
+          res <- iobed.bed::pull_bed_stream(bed_con) |>
+            iobed.bed::tidy_iobed_stream()
+          fire_ready(status_bed)
+          res
+        },
+        warning = function(e) test_failed_or_not_run(session = session),
+        error = function(e) test_failed_or_not_run(session = session)
+      )
 
     }) |>
       bindEvent(input[["bedTestConnect"]])
@@ -158,14 +175,19 @@ mod_bed_server <- function(id){
 # Recording --------------------------------------------------------
 
     observe({
-      message('Button start clicked')
+      usethis::ui_done('Button start clicked')
       req(input[["bedPort"]])
+      req(input[["pid"]])
 
+      if (is_status(status_bed, "starting")) {
+        return(test_failed_or_not_run(session = session))
+      }
       if (would_start_when_running(status_bed)) return(NULL)
       if (would_start_not_ready(status_bed)) return(NULL)
 
       close_if_open_connection("bed_con")
 
+      usethis::ui_todo("{{future}} is running!")
       res <- future::future({
 
         bed_con <- tryCatch(
@@ -236,6 +258,9 @@ mod_bed_server <- function(id){
     observe({
       usethis::ui_done("Button stop clicked")
 
+      if (is_status(status_bed, "starting")) {
+        return(test_failed_or_not_run(session = session))
+      }
       if (would_stop_stopped(status_bed)) return(NULL)
       if (would_stop_interrupted(status_bed)) return(NULL)
 
@@ -263,6 +288,9 @@ mod_bed_server <- function(id){
       readr::read_rds(filepath())
     })
 
+    output$status <- renderText({
+      paste0("Current status: ", current_status())
+    })
 
   })
 }

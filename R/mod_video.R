@@ -42,7 +42,7 @@ mod_video_ui <- function(id){
           value = 0,
           step = 1
         ),
-        actionButton(ns("set"), "Accept settings"),
+        # actionButton(ns("set"), "Accept settings"),
         actionButton(ns("preview"), "Take snapshot"),
         actionButton(ns("clear_preview"), "Clear snapshot"),
         actionButton(ns("start"), "Start recording"),
@@ -122,7 +122,7 @@ mod_video_server <- function(id) {
         normalizePath(mustWork = FALSE)
     })
 
-    fire_ready(status_video)
+    fire_starting(status_video)
     #
     # observe({
     #   message("Button Set clicked")
@@ -144,7 +144,9 @@ mod_video_server <- function(id) {
       validate(need(input[["index"]], "index must be provided"))
       my_stream <- Rvision::stream(input[["index"]])
       withr::defer(Rvision::release(my_stream))
-      Rvision::readNext(my_stream)
+      frame <- Rvision::readNext(my_stream)
+      fire_ready(status_video)
+      frame
     }) |>
       bindEvent(input[["preview"]])
 
@@ -168,6 +170,9 @@ mod_video_server <- function(id) {
       op <- options(digits.secs = 6)
       withr::defer(options(op))
 
+      if (is_status(status_video, "starting")) {
+        return(test_failed_or_not_run(session = session))
+      }
       if (would_start_when_running(status_video)) return(NULL)
       if (would_start_not_ready(status_video)) return(NULL)
 
@@ -282,6 +287,9 @@ mod_video_server <- function(id) {
     observe({
       message("Button stop clicked")
 
+      if (is_status(status_video, "starting")) {
+        return(test_failed_or_not_run(session = session))
+      }
       if (would_stop_stopped(status_video)) return(NULL)
       if (would_stop_interrupted(status_video)) return(NULL)
 

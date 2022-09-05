@@ -41,3 +41,24 @@ check_connection <- function(con) {
 }
 
 
+test_failed_or_not_run <- function(e = NULL, session =  getDefaultReactiveDomain()) {
+  showNotification(
+    HTML(
+      "Test failed or not run.</br></br>
+      Maybe the cable is unplugged from the PC? (Plug it!)</br>
+      Maybe wrong connection port/ID? (Select a different one!)</br></br
+      >
+      Before to start recording, PLEASE, RUN A SUCESSFUL TEST.</br></br>
+
+      If you checked the cable connection, tried all ports/IDs,
+      and still receive this error in testing connection, please,
+      contact Corrado.Lanera@ubep.unipd.it.</br>
+      Thank you.
+    "),
+    type = "error",
+    duration = 30, session = session
+  )
+  usethis::ui_warn("Bed test failed or not run")
+  if (!is.null(e)) usethis::ui_warn("ERROR: {e}")
+  NULL
+}

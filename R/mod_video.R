@@ -9,9 +9,9 @@
 #' @import iobed.video
 #' @import shinyjs
 #' @importFrom shiny NS tagList
-#' @importFrom shinyFiles shinyDirChoose shinyDirButton getVolumes
 mod_video_ui <- function(id){
-  suppressWarnings(useShinyjs())
+  shinyjs::useShinyjs()
+
   ns <- NS(id)
   tagList(
     fluidRow(
@@ -89,18 +89,23 @@ mod_video_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+
+
+
+# Setup -----------------------------------------------------------
+
+
     stopifnot(
       `Status video exists` = exists("status_video", envir = .GlobalEnv)
     )
     status_video <- get("status_video", envir = .GlobalEnv)
 
 
-# Setup -----------------------------------------------------------
-
-
     my_writer <- NULL
     my_stream <- NULL
     my_buffer <- NULL
+
+
 
 
 # Reactives -------------------------------------------------------
@@ -132,6 +137,7 @@ mod_video_server <- function(id) {
 
 
 
+
 # Preview ---------------------------------------------------------
 
     test_out <- reactive({
@@ -151,6 +157,7 @@ mod_video_server <- function(id) {
 
 
 
+
 # Recordings ------------------------------------------------------
 
     observe({
@@ -161,31 +168,8 @@ mod_video_server <- function(id) {
       op <- options(digits.secs = 6)
       withr::defer(options(op))
 
-      if (is_status(status_video, "running")) {
-        showNotification(
-          "Already recording.
-         You cannot start new recordings if one is ongoing.
-         Please, interrupt the current run (stop button) if you need a new recording.
-        ",
-        type = "warning",
-        duration = 10
-        )
-        message("Recording doesn't started (again)")
-        return(NULL)
-      }
-
-      if (!is_status(status_video, "ready")) {
-        showNotification(
-          "Not ready.
-         Have you done all settings (and accepted them)?
-         You need to set both the PID, and camera index to start recording.
-        ",
-        type = "warning",
-        duration = 10
-        )
-        message("Cycle doesn't started (not ready)")
-        return(NULL)
-      }
+      if (would_start_when_running(status_video)) return(NULL)
+      if (would_start_not_ready(status_video)) return(NULL)
 
       fs::dir_create(out_folder())
       message("Output directory created/checked.")
@@ -253,7 +237,7 @@ mod_video_server <- function(id) {
             status_video,
             round(1 - 1/sqrt(i/50), 2 + log10(i)) * 100
           )
-          i <- i + 1
+          i[[1]] <- i[[1]] + 1
         }
         Rvision::release(my_writer)
         Rvision::release(my_buffer)
@@ -298,36 +282,11 @@ mod_video_server <- function(id) {
     observe({
       message("Button stop clicked")
 
-      if (is_status(status_video, "ready")) {
-        showNotification(
-          "Recording is not running.
-         You cannot interrupt a not running recording...
-         If you like, you can start a recording to interrupt ;-)
-         (start button).
-        ",
-        type = "warning",
-        duration = 10
-        )
-        message("Recording ready to start, it doesn't interrupted")
-        return(NULL)
-      }
-
-      if (is_status(status_video, "interrupt")) {
-        showNotification(
-          "Recording already interrupted.
-         You cannot interrupt a not running recording...
-         If ready, you can start a recording to interrupt ;-)
-         (start button).
-        ",
-        type = "warning",
-        duration = 10
-        )
-        message("Recording doesn't interrupted (again)")
-        return(NULL)
-      }
+      if (would_stop_stopped(status_video)) return(NULL)
+      if (would_stop_interrupted(status_video)) return(NULL)
 
       fire_interrupt(status_video)
-      showNotification("Cycle stopped")
+      showNotification("Video recording cycle stopped")
       message("Streaming is OFF")
       message(
         "objects in globalenv (OK if empty!): ", ls(envir = .GlobalEnv)

@@ -9,6 +9,8 @@
 #' @import iobed.bed
 #' @importFrom shiny NS tagList
 mod_bed_ui <- function(id){
+  shinyjs::useShinyjs()
+
   ns <- NS(id)
   tagList(
     fluidRow(
@@ -28,6 +30,8 @@ mod_bed_ui <- function(id){
           )
         )
       ),
+
+
       box(
         title = "Parameters", status = "warning", solidHeader = TRUE,
         textInput(ns("pid"), "Person's ID: "),
@@ -43,12 +47,13 @@ mod_bed_ui <- function(id){
             error = function(e) "No port available"
           )[[1L]]
         ),
+
         actionButton(ns("bedTestConnect"), "Test connection"),
 
         actionButton(ns("bedStart"), "Start"),
-        actionButton(ns("bedStop"), "Stop"),
-        actionButton(ns("save"), "Write results"),
+        actionButton(ns("bedStop"), "Stop & Save"),
       ),
+
       box(
         title = "Selected parameters", status = "info", width = 12,
         textOutput(ns("out_port")),
@@ -57,11 +62,16 @@ mod_bed_ui <- function(id){
     ),
     fluidRow(
       box(
-        title = "Test output", status = "info", solidHeader = TRUE,
-        tableOutput(ns("out_tbl"))
+        title = "Status", status = "info", solidHeader = TRUE,
+        width = 12,
+        textOutput(ns("status"))
       ),
       box(
-        title = "Final result", status = "info", solidHeader = TRUE,
+        title = "Test output", status = "info", solidHeader = TRUE,
+        DT::DTOutput(ns("out_tbl"))
+      ),
+      box(
+        title = "Final result (head)", status = "info", solidHeader = TRUE,
         DT::DTOutput(ns("res_tbl"))
       )
     )
@@ -78,51 +88,145 @@ mod_bed_server <- function(id){
 
 
 
+# Setup -----------------------------------------------------------
+
+    stopifnot(
+      `Status bed exists` = exists("status_bed", envir = .GlobalEnv)
+    )
+    status_bed <- get("status_bed", envir = .GlobalEnv)
+
+
+
+
+# Reactives -------------------------------------------------------
+
+    filepath <- reactive({
+      validate(need(input[["pid"]], "PID must be provided."))
+      message('re-evaluating filepath after button start pressing')
+
+      today_now <- now()
+      pid <- input[["pid"]]
+      here::here("data", pid, glue::glue("{now()}-{pid}-bed.rds")) |>
+        normalizePath(mustWork = FALSE)
+
+    })
+
+    fire_ready(status_bed)
+
+
+
+
+# Preview ---------------------------------------------------------
 
     test_out <- reactive({
-      message('re-evaluating test?out after button test pressing')
+      validate(need(input[["bedPort"]], "Bed port must be provided."))
 
-      if (exists("con") && serial::isOpen(con)) {
-        usethis::ui_warn(
-          "A connection is already open, it will be closed now!"
-        )
-        close(con)
-      }
+      showNotification(
+        "Test for bed connection is running.
+        Resulting table should be appear in a while.
+        ",
+        type = "message",
+        duration = 10
+      )
+      usethis::ui_done(
+        "(re-)evaluating test_out after button test pressing"
+      )
 
-      con <- tryCatch(
+      close_if_open_connection("bed_con")
+
+      bed_con <- tryCatch(
         iobed.bed::bed_connection(input[["bedPort"]]),
         error = function(e) FALSE
       )
+      if (isFALSE(check_connection(bed_con))) return(NULL)
 
-      if (isFALSE(con)) {
-        tibble(error = "Connection not established!")
-      } else {
-        open(con)
-        cat(glue::glue("connection is open: {serial::isOpen(con)}.\n"))
+      open(bed_con)
+      withr::defer(close(bed_con))
 
-        Sys.sleep(3)
-        print(con)
+      usethis::ui_info("Connection is open: {serial::isOpen(bed_con)}.")
 
-        iobed.bed::pull_bed_stream(con) |>
-          iobed.bed::tidy_iobed_stream()
-      }
+      Sys.sleep(3)
+      summary(bed_con)
+
+      iobed.bed::pull_bed_stream(bed_con) |>
+        iobed.bed::tidy_iobed_stream()
 
     }) |>
       bindEvent(input[["bedTestConnect"]])
 
 
+# Recording --------------------------------------------------------
 
+    observe({
+      message('Button start clicked')
+      req(input[["bedPort"]])
 
-    filepath <- reactive({
-      message('re-evaluating filepath after button start pressing')
-      req(input[["pid"]])
+      if (would_start_when_running(status_bed)) return(NULL)
+      if (would_start_not_ready(status_bed)) return(NULL)
 
-      today_now <- Sys.time() |>
-        stringr::str_remove_all("\\W")
-      patient_id <- input[["pid"]]
-      normalizePath(path.expand(file.path(
-        ".", "data", paste0(today_now, "-", patient_id, "-bed.rds")
-      )), mustWork = FALSE)
+      close_if_open_connection("bed_con")
+
+      res <- future::future({
+
+        bed_con <- tryCatch(
+          iobed.bed::bed_connection(input[["bedPort"]]),
+          error = function(e) FALSE
+        )
+        if (isFALSE(check_connection(bed_con))) return(NULL)
+
+        open(bed_con)
+        withr::defer(close(bed_con))
+
+        usethis::ui_info(
+          "Connection is open: {serial::isOpen(bed_con)}"
+        )
+        summary(bed_con)
+
+        fire_running(status_bed)
+        usethis::ui_done("Streaming is ON")
+
+        i <- 1
+        while (status_bed |> is_status("running")) {
+          fire_running(
+            status_bed,
+            round(1 - 1/sqrt(i/50), 2 + log10(i)) * 100
+          )
+          Sys.sleep(1)
+          i[[1]] <- i[[1]] + 1
+        }
+
+        message("Recording interrupted!")
+
+        iobed.bed::pull_bed_stream(bed_con) |>
+          iobed.bed::tidy_iobed_stream() |>
+          readr::write_rds(filepath())
+
+        usethis::ui_done("Elaborating bed table")
+        usethis::ui_done("Writing bed data on {filepath()}.")
+
+        filepath()
+
+      })
+
+      res <- promises::catch(
+        res,
+        function(e) {
+          usethis::ui_warn(e$message)
+          fire_strange(status_bed)
+          showNotification(e$message, type = "warning")
+        }
+      )
+
+      res <- promises::finally(
+        res,
+        function() {
+          if (!is_status(status_bed, "strange")) fire_ready(status_bed)
+        }
+      )
+
+      # Return something other than the promise so shiny remains
+      # responsive
+      NULL
     }) |>
       bindEvent(input[["bedStart"]])
 
@@ -130,57 +234,19 @@ mod_bed_server <- function(id){
 
 
     observe({
-      message('Button start pressed')
-      if (exists("con") && serial::isOpen(con))  {
-        usethis::ui_warn(
-          "A connection is already open, it will be closed now!"
-        )
-        close(con)
-      }
+      usethis::ui_done("Button stop clicked")
 
-      con <<- tryCatch(
-        iobed.bed::bed_connection(input[["bedPort"]]),
-        error = function(e) FALSE
-      )
+      if (would_stop_stopped(status_bed)) return(NULL)
+      if (would_stop_interrupted(status_bed)) return(NULL)
 
-      open(con)
-      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
-      summary(con)
-
-    }) |>
-      bindEvent(input[["bedStart"]])
-
-
-
-
-    res <- reactive({
-
-      message('re-evaluating res after button stop pressing')
-
-      result <- iobed.bed::pull_bed_stream(.GlobalEnv$con) |>
-        iobed.bed::tidy_iobed_stream()
-      cat(glue::glue("connection is open: {serial::isOpen(con)}.\n\n"))
-      result
+      fire_interrupt(status_bed)
+      showNotification("Bed recording cycle stopped")
     }) |>
       bindEvent(input[["bedStop"]])
 
 
 
-
-    observe({
-      message('Button save pressing')
-      req(res)
-      req(filepath)
-
-      cat(glue::glue("RDS to write on {filepath()}.\n"))
-      readr::write_rds(res(), filepath())
-      cat(glue::glue("RDS written on {filepath()}.\n"))
-
-    }) |>
-      bindEvent(input[["save"]])
-
-
-
+# Outputs ---------------------------------------------------------
 
     output$out_folder <- renderText(
       glue::glue("Outup folder is: {filepath()}")
@@ -190,9 +256,12 @@ mod_bed_server <- function(id){
       glue::glue("Output port selected is: {input[['bedPort']]}")
     )
 
-    output$out_tbl <- renderTable(test_out())
+    output$out_tbl <- DT::renderDT(test_out())
 
-    output$res_tbl <- DT::renderDT(res())
+    output$res_tbl <- DT::renderDT({
+      if (!fs::file_exists(filepath())) return(NULL)
+      readr::read_rds(filepath())
+    })
 
 
   })

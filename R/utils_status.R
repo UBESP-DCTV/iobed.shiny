@@ -112,3 +112,71 @@ print_progress <- function(i) {
     cat("X")
   } else cat(".")
 }
+
+
+would_start_when_running <- function(status_file) {
+  if (is_status(status_file, "running")) {
+    showNotification(
+      "Already recording.
+         You cannot start new recordings if one is ongoing.
+         Please, interrupt the current run (stop button) if you need a new recording.
+        ",
+      type = "warning",
+      duration = 10
+    )
+    message("Recording doesn't started (again)")
+    return(TRUE)
+  }
+  FALSE
+}
+
+would_start_not_ready <- function(status_file) {
+  if (!is_status(status_file, "ready")) {
+    showNotification(
+      "Not ready.
+         Have you done all settings (and accepted them)?
+         You need to set both the PID, and index/port to start recording.
+        ",
+      type = "warning",
+      duration = 10
+    )
+    message("Cycle doesn't started (not ready)")
+    return(TRUE)
+  }
+  FALSE
+}
+
+
+would_stop_stopped <- function(status_file) {
+  if (is_status(status_file, "ready")) {
+    showNotification(
+      "Recording is not running.
+         You cannot interrupt a not running recording...
+         If you like, you can start a recording to interrupt ;-)
+         (start button).
+        ",
+      type = "warning",
+      duration = 10
+    )
+    message("Recording ready to start, it doesn't interrupted")
+    return(TRUE)
+  }
+  FALSE
+}
+
+would_stop_interrupted <- function(status_file) {
+  if (is_status(status_file, "interrupt")) {
+    showNotification(
+      "Recording already interrupted.
+         You cannot interrupt a not running recording...
+         If ready, you can start a recording to interrupt ;-)
+         (start button).
+        ",
+      type = "warning",
+      duration = 10
+    )
+    message("Recording doesn't interrupted (again)")
+    return(TRUE)
+  }
+  FALSE
+}

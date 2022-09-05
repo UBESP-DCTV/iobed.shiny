@@ -26,7 +26,6 @@ Imports:
     serial,
     shiny (>= 1.7.1),
     shinydashboard,
-    shinyFiles,
     shinyjs,
     stringr,
     tibble,
@@ -45,9 +44,9 @@ Suggests:
 Remotes: 
     swarm-lab/Rvision,
     UBESP-DCTV/iobed.bed,
+    UBESP-DCTV/iobed.shiny,
     UBESP-DCTV/iobed.video,
-    UBESP-DCTV/iobed.watch,
-    UBESP-DCTV/iobed.shiny
+    UBESP-DCTV/iobed.watch
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US

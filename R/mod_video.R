@@ -1,6 +1,3 @@
-future::plan(future::multisession, workers = 2)
-
-
 #' video UI Function
 #'
 #' @description A shiny Module.
@@ -92,35 +89,25 @@ mod_video_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-
+    stopifnot(
+      `Status video exists` = exists("status_video", envir = .GlobalEnv)
+    )
+    status_video <- get("status_video", envir = .GlobalEnv)
 
 
 # Setup -----------------------------------------------------------
 
-    status_file <- fs::file_temp(ext = "txt")
+
     my_writer <- NULL
     my_stream <- NULL
     my_buffer <- NULL
-
-    onStop({
-      function() {
-        message("Final status: ", get_status(status_file))
-        if (fs::file_exists(status_file)) unlink(status_file)
-        future::plan(future::sequential)
-      }
-    })
-
-    fire_interrupt(status_file)
-
-
-
 
 
 # Reactives -------------------------------------------------------
 
     current_status <- reactive({
       invalidateLater(1e3)
-      get_status(status_file)
+      get_status(status_video)
     })
 
 
@@ -130,7 +117,7 @@ mod_video_server <- function(id) {
         normalizePath(mustWork = FALSE)
     })
 
-    fire_ready(status_file)
+    fire_ready(status_video)
     #
     # observe({
     #   message("Button Set clicked")
@@ -174,7 +161,7 @@ mod_video_server <- function(id) {
       op <- options(digits.secs = 6)
       withr::defer(options(op))
 
-      if (is_status(status_file, "running")) {
+      if (is_status(status_video, "running")) {
         showNotification(
           "Already recording.
          You cannot start new recordings if one is ongoing.
@@ -187,7 +174,7 @@ mod_video_server <- function(id) {
         return(NULL)
       }
 
-      if (!is_status(status_file, "ready")) {
+      if (!is_status(status_video, "ready")) {
         showNotification(
           "Not ready.
          Have you done all settings (and accepted them)?
@@ -234,7 +221,7 @@ mod_video_server <- function(id) {
         message("Writer is ready")
 
 
-        fire_running(status_file)
+        fire_running(status_video)
 
         i <- 1
 
@@ -260,10 +247,10 @@ mod_video_server <- function(id) {
             Rvision::write.Image(frame, get_frame_path(out_dir, i, pid))
           )
 
-          if (is_status(status_file, "interrupt")) break
+          if (is_status(status_video, "interrupt")) break
 
           fire_running(
-            status_file,
+            status_video,
             round(1 - 1/sqrt(i/50), 2 + log10(i)) * 100
           )
           i <- i + 1
@@ -280,7 +267,7 @@ mod_video_server <- function(id) {
         res,
         function(e) {
           message(e$message)
-          fire_strange(status_file)
+          fire_strange(status_video)
           message("Releasing writer/buffer/stream")
           Rvision::release(my_writer)
           Rvision::release(my_buffer)
@@ -293,8 +280,8 @@ mod_video_server <- function(id) {
       res <- promises::finally(
         res,
         function() {
-          if (!is_status(status_file, "strange")) {
-            fire_ready(status_file)
+          if (!is_status(status_video, "strange")) {
+            fire_ready(status_video)
           }
         }
       )
@@ -311,7 +298,7 @@ mod_video_server <- function(id) {
     observe({
       message("Button stop clicked")
 
-      if (is_status(status_file, "ready")) {
+      if (is_status(status_video, "ready")) {
         showNotification(
           "Recording is not running.
          You cannot interrupt a not running recording...
@@ -325,7 +312,7 @@ mod_video_server <- function(id) {
         return(NULL)
       }
 
-      if (is_status(status_file, "interrupt")) {
+      if (is_status(status_video, "interrupt")) {
         showNotification(
           "Recording already interrupted.
          You cannot interrupt a not running recording...
@@ -339,7 +326,7 @@ mod_video_server <- function(id) {
         return(NULL)
       }
 
-      fire_interrupt(status_file)
+      fire_interrupt(status_video)
       showNotification("Cycle stopped")
       message("Streaming is OFF")
       message(

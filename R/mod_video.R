@@ -142,7 +142,19 @@ mod_video_server <- function(id) {
 
     test_out <- reactive({
       validate(need(input[["index"]], "index must be provided"))
-      my_stream <- Rvision::stream(input[["index"]])
+      my_stream <- tryCatch(
+        Rvision::stream(input[["index"]]),
+        error = function(e) FALSE
+      )
+      if (!Rvision::isStream(my_stream)) {
+        showNotification(HTML(paste(collapse = "</br>",
+          "Error in creating the Stream.",
+          "Possibly wrong port selected for the camera; try a different one.",
+          "If the issue persist, please, contact Corrado.Lanera@ubep.unipd.it"
+        )))
+        usethis::ui_warn("Wrong port selected")
+        return(NULL)
+      }
       withr::defer(Rvision::release(my_stream))
       frame <- Rvision::readNext(my_stream)
       fire_ready(status_video)

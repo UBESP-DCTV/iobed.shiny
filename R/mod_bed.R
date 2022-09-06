@@ -116,7 +116,6 @@ mod_bed_server <- function(id){
       pid <- input[["pid"]]
       here::here("data", pid, glue::glue("{now()}-{pid}-bed.rds")) |>
         normalizePath(mustWork = FALSE)
-
     })
 
     fire_starting(status_bed)
@@ -134,6 +133,7 @@ mod_bed_server <- function(id){
       usethis::ui_done(
         "(re-)evaluating test_out after button test pressing"
       )
+
       showNotification(
         "Test for bed connection is running.
         Resulting table should be appear in a while.
@@ -159,8 +159,7 @@ mod_bed_server <- function(id){
       summary(bed_con)
 
       tryCatch({
-          res <- iobed.bed::pull_bed_stream(bed_con) |>
-            iobed.bed::tidy_iobed_stream()
+          res <- tryTwice_pull_and_tidy(bed_con)
           fire_ready(status_bed)
           res
         },
@@ -221,14 +220,9 @@ mod_bed_server <- function(id){
           Sys.sleep(1)
           i[[1]] <- i[[1]] + 1
         }
+        usethis::ui_done("Recording interrupted!")
 
-        message("Recording interrupted!")
-
-        stream <- iobed.bed::pull_bed_stream(bed_con)
-        usethis::ui_done("XXXXXXXXXXXXXXXXXXXXXXXx")
-        res_tbl <- iobed.bed::tidy_iobed_stream(stream)
-        usethis::ui_done("YYYYYYYYYYYYYYYYYYYYYYYYYY")
-        Sys.sleep(1)
+        res_tbl <- tryTwice_pull_and_tidy(bed_con)
 
         usethis::ui_todo("writing rds bed data tbl")
         fs::dir_create(dirname(.filepath), recurse = TRUE)

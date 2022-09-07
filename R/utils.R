@@ -10,7 +10,7 @@ now <- function() {
 close_if_open_connection <- function(con = "con") {
   if (exists(con) && serial::isOpen(get(con))) {
     showNotification(
-      "Something strange happen wiht the connection.
+      "Something strange happen with the connection.
       Anywhay, that should not invalidate the results.
       Please, contact Corrado.Lanera@ubep.unipd.it reporting the issue.
       Thanks.

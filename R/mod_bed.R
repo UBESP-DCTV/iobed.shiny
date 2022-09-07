@@ -121,6 +121,27 @@ mod_bed_server <- function(id){
     fire_starting(status_bed)
 
 
+    res_tbl <- reactive({
+      Sys.sleep(5)
+
+      if (!fs::file_exists(filepath())) {
+        showNotification(
+          "Something strange happen with the reading of the RDS file.
+      Please, contact Corrado.Lanera@ubep.unipd.it reporting the issue.
+      Thanks.
+        ",
+      type = "error",
+      duration = 15
+        )
+        usethis::ui_warn(
+          "filepath() seems not exists... very strange!\n"
+        )
+        NULL
+      } else {
+        readr::read_rds(filepath())
+      }
+    }) |>
+      bindEvent(input[["bedStop"]])
 
 
 # Preview ---------------------------------------------------------
@@ -284,8 +305,7 @@ mod_bed_server <- function(id){
     output$out_tbl <- DT::renderDT(test_out())
 
     output$res_tbl <- DT::renderDT({
-      if (!fs::file_exists(filepath())) return(NULL)
-      readr::read_rds(filepath())
+      res_tbl()
     })
 
     output$status <- renderText({
@@ -294,6 +314,7 @@ mod_bed_server <- function(id){
 
   })
 }
+
 
 ## To be copied in the UI
 # mod_bed_ui("bed_1")

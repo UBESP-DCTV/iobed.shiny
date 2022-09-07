@@ -47,7 +47,10 @@ on_start <- function() {
 
 
 # Run the application
-run_app(onStart = on_start, golem_opts = list(workers = 4))
+run_app(
+  onStart = on_start,
+  workers = 4
+)
 
 
 

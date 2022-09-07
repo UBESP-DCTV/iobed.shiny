@@ -203,6 +203,7 @@ mod_video_server <- function(id) {
       out_dir <- out_folder()
 
       res <- future::future({
+
         my_stream <- Rvision::stream(index)
         message("Streaming is ON")
 
@@ -227,11 +228,9 @@ mod_video_server <- function(id) {
         i <- 1
 
         while (TRUE) {
-          # print_progress(i)
-          # Sys.sleep(0.1)
           if (Rvision::empty(my_buffer)) {
             usethis::ui_warn(
-              "Empty buffer, cycle skipped waiting 1 s."
+              "Empty buffer, cycle skipped waiting 1 s.\n"
             )
             Sys.sleep(1)
             next
@@ -239,7 +238,7 @@ mod_video_server <- function(id) {
 
           Rvision::readNext(my_buffer, target = frame)
           if (!Rvision::isImage(frame)) {
-            usethis::ui_warn("frame is not an image, cycle skipped")
+            usethis::ui_warn("frame is not an image, cycle skipped\n")
             next
           }
 
@@ -260,7 +259,7 @@ mod_video_server <- function(id) {
         Rvision::release(my_buffer)
         Rvision::release(my_stream)
 
-        message("Recording interrupted!")
+        usethis::ui_done("Recording interrupted!\n")
         frame
       })
 
@@ -269,7 +268,7 @@ mod_video_server <- function(id) {
         function(e) {
           message(e$message)
           fire_strange(status_video)
-          message("Releasing writer/buffer/stream")
+          usethis::ui_done("Releasing writer/buffer/stream")
           Rvision::release(my_writer)
           Rvision::release(my_buffer)
           Rvision::release(my_stream)

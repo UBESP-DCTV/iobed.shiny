@@ -1,4 +1,4 @@
-# iobed.shiny (development version)
+# iobed.shiny 0.2.4
 
 * Now resulting table is correctly shown (#6)
 * tryTwice_pull_and_tidy does not close the connection. (#3)

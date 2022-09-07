@@ -1,5 +1,6 @@
 # iobed.shiny (development version)
 
+* Now resulting table is correctly shown (#6)
 * tryTwice_pull_and_tidy does not close the connection. (#3)
 * Now status messaging for firing status are signaled to the console depending on `option()[["verbose"]]. (#7)
 * Implemented `tryTwice_pull_and_tidy` which, as the name, make a first attempt and if errored it makes a second one to pull the bed streaming and tidying it. The issue it solves generate by consistently error in the first time reading from that connection. (#3)

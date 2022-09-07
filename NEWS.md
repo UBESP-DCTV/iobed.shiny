@@ -1,3 +1,12 @@
+# iobed.shiny (development version)
+
+* Now resulting table is correctly shown (#6)
+* tryTwice_pull_and_tidy does not close the connection. (#3)
+* Now status messaging for firing status are signaled to the console depending on `option()[["verbose"]]. (#7)
+* Implemented `tryTwice_pull_and_tidy` which, as the name, make a first attempt and if errored it makes a second one to pull the bed streaming and tidying it. The issue it solves generate by consistently error in the first time reading from that connection. (#3)
+* Setup onStart to setup and cleanup globally parallel environment and workers, and status fiels (now by default the app uses 4 parallel processes to manage the modules and the main application). (#3)
+* Extracted utility functions (status and time) on dedicated files, i.e. `utils.R`, and `utils_status.R`
+
 # iobed.shiny 0.2.3
 
 * Now the res reactive look for the connection in the .Globalenv directly, preventing a bug that caused an error in the very first access to the connection from the tcltk ("[tcl] error reading "file1fac46bee60": I/O error.") probably caused by the different environment in which it first look for it.

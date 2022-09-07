@@ -115,7 +115,8 @@ mod_bed_server <- function(id){
       pid <- input[["pid"]]
       here::here("data", pid, glue::glue("{now()}-{pid}-bed.rds")) |>
         normalizePath(mustWork = FALSE)
-    })
+    }) |>
+      bindEvent(input[["bedStart"]])
 
     fire_starting(status_bed)
 
@@ -187,9 +188,7 @@ mod_bed_server <- function(id){
       close_if_open_connection("bed_con")
 
       usethis::ui_todo("{{future}} is running!")
-      fopts <- golem::get_golem_options()
-      res <- future::future(seed = TRUE, {
-        options(fopts)
+      res <- future::future(seed = TRUE, gc = TRUE, {
 
         bed_con <- tryCatch(
           iobed.bed::bed_connection(bedPort),

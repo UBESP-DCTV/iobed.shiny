@@ -1,5 +1,6 @@
 # iobed.shiny (development version)
 
+* tryTwice_pull_and_tidy does not close the connection. (#3)
 * Now status messaging for firing status are signaled to the console depending on `option()[["verbose"]]. (#7)
 * Implemented `tryTwice_pull_and_tidy` which, as the name, make a first attempt and if errored it makes a second one to pull the bed streaming and tidying it. The issue it solves generate by consistently error in the first time reading from that connection. (#3)
 * Setup onStart to setup and cleanup globally parallel environment and workers, and status fiels (now by default the app uses 4 parallel processes to manage the modules and the main application). (#3)

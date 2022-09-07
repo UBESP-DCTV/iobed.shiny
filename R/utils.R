@@ -81,5 +81,6 @@ tryTwice_pull_and_tidy <- function(con) {
         iobed.bed::tidy_iobed_stream()
     }
   ))
-  if (!is(res, "try-error")) res else NULL
+
+  if (!is(res, "try-error")) res else stop(res)
 }

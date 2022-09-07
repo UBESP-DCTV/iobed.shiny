@@ -174,8 +174,6 @@ mod_bed_server <- function(id){
 # Recording --------------------------------------------------------
 
     observe({
-      req(filepath)
-
       usethis::ui_done('Button start clicked')
       bedPort <- req(input[["bedPort"]])
       pid <- req(input[["pid"]])
@@ -190,7 +188,7 @@ mod_bed_server <- function(id){
       close_if_open_connection("bed_con")
 
       usethis::ui_todo("{{future}} is running!")
-      res <- future::future(seed = TRUE, {
+      res <- future::future(seed = TRUE, gc = TRUE, {
 
         bed_con <- tryCatch(
           iobed.bed::bed_connection(bedPort),

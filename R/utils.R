@@ -72,12 +72,12 @@ test_failed_or_not_run <- function(
 
 
 tryTwice_pull_and_tidy <- function(con) {
-  res <- try(tryCatch(iobed.bed::pull_bed_stream(con) |>
+  res <- try(tryCatch(iobed.bed::pull_bed_stream(con, close = FALSE) |>
     iobed.bed::tidy_iobed_stream(),
     error = function(e) {
       usethis::ui_info("pull_and_tidy runned twice!")
       usethis::ui_info("First error was: {e}")
-      iobed.bed::pull_bed_stream(con) |>
+      iobed.bed::pull_bed_stream(con, close = FALSE) |>
         iobed.bed::tidy_iobed_stream()
     }
   ))

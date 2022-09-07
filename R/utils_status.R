@@ -22,12 +22,18 @@ set_status <- function(status_file, status_msg) {
 }
 
 
-fire_status <- function(status_file, status_msg) {
+fire_status <- function(
+    status_file,
+    status_msg,
+    verbose = options()[["verbose"]]
+) {
   status_name <- basename(status_file)
   set_status(status_file, status_msg)
-  usethis::ui_done(
-    "Setting {ui_field(status_name)} status: {ui_value(status_msg)}"
-  )
+  if (verbose) {
+    usethis::ui_done(
+      "Setting {ui_field(status_name)} status: {ui_value(status_msg)}"
+    )
+  }
 }
 
 
@@ -37,8 +43,11 @@ fire_status <- function(status_file, status_msg) {
 #'
 #' @return Value
 #' @export
-fire_starting <- function(status_file) {
-  fire_status(status_file, "Starting")
+fire_starting <- function(
+    status_file,
+    verbose = options()[["verbose"]]
+) {
+  fire_status(status_file, "Starting", verbose = verbose)
 }
 
 #' Title
@@ -47,8 +56,11 @@ fire_starting <- function(status_file) {
 #'
 #' @return Value
 #' @export
-fire_interrupt <- function(status_file) {
-  fire_status(status_file, "Interrupt")
+fire_interrupt <- function(
+    status_file,
+    verbose = options()[["verbose"]]
+) {
+  fire_status(status_file, "Interrupt", verbose = verbose)
 }
 
 #' Title
@@ -57,8 +69,11 @@ fire_interrupt <- function(status_file) {
 #'
 #' @return Value
 #' @export
-fire_ready <- function(status_file) {
-  fire_status(status_file, "Ready")
+fire_ready <- function(
+    status_file,
+    verbose = options()[["verbose"]]
+) {
+  fire_status(status_file, "Ready", verbose = verbose)
 }
 
 #' Title
@@ -67,8 +82,12 @@ fire_ready <- function(status_file) {
 #'
 #' @return Value
 #' @export
-fire_strange <- function(status_file) {
-  fire_status(status_file, "Strange things happened...")
+fire_strange <- function(
+    status_file,
+    verbose = options()[["verbose"]]
+) {
+  status_file |>
+    fire_status("Strange things happened...", verbose = verbose)
 }
 
 
@@ -79,10 +98,17 @@ fire_strange <- function(status_file) {
 #'
 #' @return Value
 #' @export
-fire_running <- function(status_file, perc = NULL) {
+fire_running <- function(
+    status_file,
+    perc = NULL,
+    verbose = options()[["verbose"]]
+) {
   if (is.null(perc)) return(set_status(status_file, "Running..."))
   status_file |>
-    fire_status(paste0("Running... (", perc, " % completed)"))
+    fire_status(
+      paste0("Running... (", perc, " % completed)"),
+      verbose = verbose
+    )
 }
 
 #' Title

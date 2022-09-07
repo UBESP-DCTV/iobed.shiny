@@ -4,7 +4,7 @@
 \alias{fire_starting}
 \title{Title}
 \usage{
-fire_starting(status_file)
+fire_starting(status_file, verbose = options()[["verbose"]])
 }
 \arguments{
 \item{status_file}{(chr) status file}

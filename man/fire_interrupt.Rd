@@ -4,7 +4,7 @@
 \alias{fire_interrupt}
 \title{Title}
 \usage{
-fire_interrupt(status_file)
+fire_interrupt(status_file, verbose = options()[["verbose"]])
 }
 \arguments{
 \item{status_file}{(chr) status file}

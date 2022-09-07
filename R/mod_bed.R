@@ -98,7 +98,6 @@ mod_bed_server <- function(id){
 
 
 
-
 # Reactives -------------------------------------------------------
 
     current_status <- reactive({
@@ -188,7 +187,9 @@ mod_bed_server <- function(id){
       close_if_open_connection("bed_con")
 
       usethis::ui_todo("{{future}} is running!")
+      fopts <- golem::get_golem_options()
       res <- future::future(seed = TRUE, {
+        options(fopts)
 
         bed_con <- tryCatch(
           iobed.bed::bed_connection(bedPort),
@@ -202,11 +203,6 @@ mod_bed_server <- function(id){
 
         open(bed_con)
         withr::defer(close(bed_con))
-
-        usethis::ui_info(
-          "Connection is open: {serial::isOpen(bed_con)}"
-        )
-        summary(bed_con)
 
         fire_running(status_bed)
         usethis::ui_done("Streaming is ON")

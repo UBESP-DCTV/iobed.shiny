@@ -241,14 +241,8 @@ mod_video_server <- function(id) {
             usethis::ui_warn("frame is not an image, cycle skipped\n")
             next
           }
-
           Rvision::writeFrame(my_writer, frame)
-          suppressMessages(
-            Rvision::write.Image(frame, get_frame_path(out_dir, i, pid))
-          )
-
           if (is_status(status_video, "interrupt")) break
-
           fire_running(
             status_video,
             round(1 - 1/sqrt(i/50), 2 + log10(i)) * 100
